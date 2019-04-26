@@ -247,20 +247,21 @@ const opcodes = new (function opcode_list() {
     const operations = Object.entries(this);
     this.allOperations = [];
     operations.forEach(entry => {
-        entry[1].key = entry[0];
-        if(this.allOperations[entry[1].index]) {
+        const operation = entry[1];
+        operaiton.key = entry[0];
+        if(this.allOperations[operation.index]) {
             throw Error("Operation index is used more than once");
         }
-        entry[1].stride = 1;
-        if(entry[1].parameterSchema) {
+        operation.stride = 1;
+        if(operation.parameterSchema) {
             let parameterSize = 0;
-            entry[1].parameterSchema.forEach(schemaToken => {
+            operation.parameterSchema.forEach(schemaToken => {
                 parameterSize += PARAMETER_BYTE_TABLE[schemaToken];
             });
-            entry[1].parameterSize = parameterSize;
-            entry[1].stride += parameterSize;
+            operation.parameterSize = parameterSize;
+            operation.stride += parameterSize;
         }
-        this.allOperations[entry[1].index] = entry[1];
+        this.allOperations[operation.index] = operation;
     });
 
     /* Arithmetic the adjective, not the noun! /ˌeriTHˈmedik/ */

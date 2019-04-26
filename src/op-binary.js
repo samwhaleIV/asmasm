@@ -23,7 +23,7 @@ function create_bytecode(operations) {
     for(let i = 0;i<operations.length;i++) {
         const operation = operations[i];
         const opcodeIndex = opcodes[operation.type.key].index;
-        if(opcodeIndex < 0 || opcodeIndex >= 256) {
+        if(opcodeIndex < UNSIGNED_START || opcodeIndex >= 256) {
             throw Error(
                 "Opcode type is out of the unsigned 8 bit integer range.\n" +
                 "a.k.a: You're fucked. I don't know how, and this doesn't make much sense, " +
