@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>opcode data viewer</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/kognise/water.css@latest/dist/dark.css">
+    <style>
+    table{background-color: rgb(42,59,79);}
+    tr:nth-child(even){background-color:rgb(22,35,50);}
+    td{padding: 12px;font-size:16px;}
+    body{max-width:1400px;}
+    </style>
+</head>
+<body>
+    <table id="operation-container">
+        <tr>
+            <th>Index</th>
+            <th>Name</th>
+            <th>Opcode</th>
+            <th>Description</th>
+            <th>Parameters</th>
+            <th>Secondary description</th>
+        </tr>
+    </table>
+    <script type="module">
+    import opcodes from "../src/opcodes.js";
+    const operationContainer = document.getElementById("operation-container");
+    function createTableData(text) {
+        const element = document.createElement("td");
+        element.appendChild(document.createTextNode(text));
+        return element;
+    }
+    function createTableRow(values) {
+        const element = document.createElement("tr");
+        values.forEach(value => {
+            element.appendChild(createTableData(value));
+        });
+        return element;
+    }
+    function displayOperation(operation) {
+        operationContainer.appendChild(createTableRow([
+            operation.index,
+            operation.name,
+            operation.key,
+            operation.description,
+            operation.parameterSchema ? operation.parameterSchema.join("\n") : "",
+            operation.secondaryDescription || ""
+        ]));
+    }
+    opcodes.allOperations.forEach(displayOperation);
+    </script>
+</body>
+</html>
