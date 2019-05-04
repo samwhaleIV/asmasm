@@ -1,4 +1,13 @@
 import opcodes from "./opcodes.js";
+const COMPILER_HELPER_SYMBOL = Symbol("COMPILER_HELPER");
+
+const op_gen_comp_type = {
+    JUMP_LABEL: Symbol("JUMP_LABEL"),
+    JUMP_LINK: Symbol("JUMP_LINK"),
+    SUBROUTINE_LABEL: Symbol("SUBROUTINE_LABEL"),
+    SUBROUTINE_LINK: Symbol("SUBROUTINE_LINK")
+};
+
 const op_gen = new (function(){
 
     const getRegisterShorthand = register => {
@@ -22,6 +31,9 @@ const op_gen = new (function(){
         }
     };
     const validateValue = (value,size) => {
+        if(size === 4 && typeof value === "object" && value.sym === COMPILER_HELPER_SYMBOL) {
+            return value;
+        }
         value = Number(value);
         if(value >= Math.pow(2,size*8) || value < 0) {
             throw Error("Value exceeds range specified by the size parameter");
@@ -140,7 +152,6 @@ const op_gen = new (function(){
             }
         };
     };
-
     this.preload_memory_block = registerContainingASize => {
         registerContainingASize = getRegisterShorthand(registerContainingASize);
         return {
@@ -161,7 +172,6 @@ const op_gen = new (function(){
             }
         };
     };
-
     this.get_comparison_value = comparisonValue => {
         if(!isNaN(comparisonValue)) {
             return comparisonValue;
@@ -172,7 +182,6 @@ const op_gen = new (function(){
         }
         return comparison;
     };
-
     this.call = registerContainingAnAddress => {
         registerContainingAnAddress = getRegisterShorthand(registerContainingAnAddress);
         return {
@@ -182,6 +191,33 @@ const op_gen = new (function(){
             }
         }
     };
-
+    this.jumpLabel = name => {
+        return {
+            sym: COMPILER_HELPER,
+            type: op_gen_comp_type.JUMP_LABEL,
+            name: name
+        };
+    };
+    this.subroutineLabel = name => {
+        return {
+            sym: COMPILER_HELPER,
+            type: op_gen_comp_type.SUBROUTINE_LABEL,
+            name: name
+        };
+    };
+    this.jumpLink = labelName => {
+        return {
+            sym: COMPILER_HELPER,
+            type: op_gen_comp_type.JUMP_LINK,
+            name: labelName
+        };
+    };
+    this.subroutineLink = labelName => {
+        return {
+            sym: COMPILER_HELPER,
+            type: op_gen_comp_type.SUBROUTINE_LINK,
+            name: labelName
+        };
+    };
 })();
-export default op_gen;
+export default { op_gen, op_gen_comp_type, COMPILER_HELPER_SYMBOL };

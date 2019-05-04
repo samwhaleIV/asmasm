@@ -1,22 +1,51 @@
 import { opcodes, OVERFLOW, REGISTER_SHORTHAND, VALUE_8, VALUE_16, VALUE_32, PARAMETER_BYTE_TABLE } from "./opcodes.js";
+import { COMPILER_HELPER_SYMBOL, op_gen_comp_type } from "./op-gen.js";
 
 const UNSIGNED_START = 0;
 function create_bytecode(operations) {
+    const jumpLookup = {};
+    const subroutineLookup = {};
+    const flatOperations = [];
     let byteCount = 0;
+    let runningOffset = 0;
     for(let i = 0;i<operations.length;i++) {
         const operation = operations[i];
+        if(operation.sym) {
+            if(operation.sym === COMPILER_HELPER_SYMBOL) {
+                switch(operation.type) {
+                    case op_gen_comp_type.JUMP_LABEL:
+                    case op_gen_comp_type.SUBROUTINE_LABEL:
+                        const isJump = operation.type === op_gen_comp_type.JUMP_LABEL;
+                        const lookupTable = isJump ? jumpLookup : subroutineLookup;
+                        if(lookupTable[operation.value]) {
+                            throw Error(`Duplicate ${isJump?"jump":"subroutine"} label '${operation.value}' existence`);  
+                        } else {
+                            lookupTable[operation.value] = i + runningOffset;
+                        }
+                        break;
+                    case op_gen_comp_type.SUBROUTINE_LINK:
+                    case op_gen_comp_type.JUMP_LINK:
+                        throw Error("Links are invalid as operation substitutions. You must use a label");
+                    default:
+                        throw Error("Expected a valid operation substitution. Jump labels and subroutine labels are the only valid types");
+                }
+                runningOffset--;
+                continue;
+            } else {
+                throw Error("Operations are not expected to have a sym property unless it is the compiler helper symbol");
+            }
+        }
         if(!operation.type) {
             throw Error(`Operation is missing a type`);
         }
         byteCount += operation.type.stride;
+        flatOperations.push(operation);
     }
-
     const assemblyBytes = new ArrayBuffer(byteCount);
     const assemblyWriter = new DataView(assemblyBytes);
-
     let byteIndex = 0;
-    for(let i = 0;i<operations.length;i++) {
-        const operation = operations[i];
+    for(let i = 0;i<flatOperations.length;i++) {
+        const operation = flatOperations[i];
         const opcodeIndex = opcodes[operation.type.key].index;
         if(opcodeIndex < UNSIGNED_START || opcodeIndex >= OVERFLOW[VALUE_8]) {
             throw Error(
@@ -46,11 +75,40 @@ function create_bytecode(operations) {
                         break;
                     case VALUE_8:
                     case VALUE_16:
-                    case VALUE_32:
                         if(value >= OVERFLOW[parameterToken]) {
                             throw Error(`Integer overflow for type '${parameterToken}'`);
                         }
                         assemblyWriter[`setUint${PARAMETER_BYTE_TABLE[parameterToken]*8}`](byteIndex,value);
+                        break;
+                    case VALUE_32:
+                        if(typeof value === "object") {
+                            if(value.sym === value.sym === COMPILER_HELPER_SYMBOL) {
+                                switch(value.type) {
+                                    case op_gen_comp_type.JUMP_LABEL:
+                                    case op_gen_comp_type.SUBROUTINE_LABEL:
+                                        throw Error("Labels are only valid as operation substitions, not as values. You must use links as 4 byte value replacements");
+                                    case op_gen_comp_type.JUMP_LINK:
+                                    case op_gen_comp_type.SUBROUTINE_LINK:
+                                        const isJump = value.type === op_gen_comp_type.JUMP_LINK;
+                                        const lookupTable = isJump ? jumpLookup : subroutineLookup;
+                                        const lookupResult = lookupTable[value.value];
+                                        if(lookupResult) {
+                                            value = lookupResult;
+                                        } else {
+                                            throw Error(`${isJump?"Jump":"Subroutine"} label '${value.value}' not found in assembly`);
+                                        }
+                                        break;
+                                    default:
+                                        throw Error("Expected a valid compiler helper type. Only links are supported, exclusively for 4 byte value replacements");
+                                }
+                            } else {
+                                throw Error("Expected 32 bit value, not an object. Only objects containing the compiler helper symbol are parsed");
+                            }
+                        }
+                        if(value >= OVERFLOW[parameterToken]) {
+                            throw Error(`Integer overflow for type '${parameterToken}'`);
+                        }
+                        assemblyWriter.setUint32(byteIndex,value);
                         break;
                     default:
                         throw Error(`Unrecognized parameter '${parameterToken}' in opcode definition`);

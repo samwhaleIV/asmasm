@@ -408,7 +408,7 @@ const instructionProcessors = [
     function preload_memory_block(reg,mem,idx,asm) {
         const register1 = reg.getRegister(0);
         const register2 = reg.getRegister(1);
-        const address = mem.allocate(register1.get());
+        const address = mem.allocate(register1.get()*8);
         register2.set(address,4);
     },
     function free_memory_block(reg,mem,idx,asm) {
@@ -417,7 +417,7 @@ const instructionProcessors = [
         if(register2.getSize() !== 4) {
             throw Error(EXPECTED_32_BIT_REGISTER);
         }
-        mem.free(register2.get(),register1.get());
+        mem.free(register2.get(),register1.get()*8);
     },
     function subroutine_call(reg,mem,idx,asm) {
         const register = reg.getRegister(asm.getUint8(idx));
