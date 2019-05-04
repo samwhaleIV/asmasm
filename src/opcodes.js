@@ -1,7 +1,7 @@
 const BITWISE_IN_PLACE_DESCRIPTION = "Register 1 is modified in place by register 2";
 
 const REGISTER_SHORTHAND = "REGISTER_SHORTHAND";
-const VALUE_8 = "VALUE_8";
+const VALUE_8 =  "VALUE_8";
 const VALUE_16 = "VALUE_16";
 const VALUE_32 = "VALUE_32";
 
@@ -10,6 +10,16 @@ PARAMETER_BYTE_TABLE[REGISTER_SHORTHAND] = 1;
 PARAMETER_BYTE_TABLE[VALUE_8] = 1;
 PARAMETER_BYTE_TABLE[VALUE_16] = 2;
 PARAMETER_BYTE_TABLE[VALUE_32] = 4;
+
+const OVERFLOW = {};
+OVERFLOW[VALUE_8] = Math.pow(2,8);
+OVERFLOW[VALUE_16] = Math.pow(2,16);
+OVERFLOW[VALUE_32] = Math.pow(2,32);
+
+const OVERFLOW_VALUES = [];
+OVERFLOW_VALUES[0] = OVERFLOW[VALUE_8];
+OVERFLOW_VALUES[1] = OVERFLOW[VALUE_16];
+OVERFLOW_VALUES[2] = OVERFLOW[VALUE_32];
 
 const opcodes = new (function opcode_list() {
 
@@ -75,40 +85,34 @@ const opcodes = new (function opcode_list() {
     };
     this.R_SHIFT = {
         index: 10,
-        name: "Zero-fill right shift",
+        name: "Zero fill right shift",
         description: BITWISE_IN_PLACE_DESCRIPTION,
-        secondaryDescription: "Shifts [a] in binary representation [b] (< 32) bits to the right, discarding bits shifted off, and shifting in [0]s from the left"
-    };
-    this.R_SHIFT_SIGN = {
-        index: 11,
-        name: "Sign-propagating right shift",
-        description: BITWISE_IN_PLACE_DESCRIPTION,
-        secondaryDescription: "Shifts [a] in binary representation [b] (< 32) bits to the right, discarding bits shifted off"
+        secondaryDescription: "Shifts [a] in binary representation [b] (< 32) bits to the right, shifting in [0]s from the left"
     };
 
     /* Program control (flow) */
     this.CMP = {
-        index: 12,
+        index: 11,
         name: "Compare",
         description: "Compares register 1 to register 2 using the comparison type by register 3, a comparison byte result going to register 3. Depending on the sign, register 2 might not be used"
     };
     this.MOV = {
-        index: 13,
+        index: 12,
         name: "Move",
         description: "Moves (skips) by the amount specified by register 4"
     };
     this.JMP = {
-        index: 14,
+        index: 13,
         name: "Jump",
         description: "Jumps to a location specified by register 4"
     };
     this.CON_JMP = {
-        index: 15,
+        index: 14,
         name: "Conditional jump",
         description: "If the comparison register (3) is true, moves by the amount specified by register 4. Otherwise flow is continued as normal"
     };
     this.CON_MOV = {
-        index: 16,
+        index: 15,
         name: "Conditional move",
         description: "If the comparison register (3) is true, jumps to the location specified by register 4. Otherwise flow is continued as normal"
     };
@@ -116,38 +120,38 @@ const opcodes = new (function opcode_list() {
     /* Value loading */
     this.LOAD_8 = {
         parameterSchema: [REGISTER_SHORTHAND,VALUE_8],
-        index: 17,
+        index: 16,
         name: "Load bytes",
         description: "Loads 1 byte from value 2 and sends the address to the register shorthand found in value 1"
     };
     this.LOAD_16 = {
         parameterSchema: [REGISTER_SHORTHAND,VALUE_16],
-        index: 18,
+        index: 17,
         name: "Load bytes",
         description: "Loads 2 bytes from value 2 and sends the address to the register shorthand found in value 1"
     };
     this.LOAD_32 = {
         parameterSchema: [REGISTER_SHORTHAND,VALUE_32],
-        index: 19,
+        index: 18,
         name: "Load bytes",
         description: "Loads 4 bytes from value 2 and sends the address to the register shorthand found in value 1"
     };
 
     this.PRELOAD_8 = {
         parameterSchema: [REGISTER_SHORTHAND],
-        index: 20,
+        index: 19,
         name: "Preload bytes",
         description: "Reserves 1 byte and sends the address to the register shorthand found in value 1"
     };
     this.PRELOAD_16 = {
         parameterSchema: [REGISTER_SHORTHAND],
-        index: 21,
+        index: 20,
         name: "Preload bytes",
         description: "Reserves 2 bytes and sends the address to the register shorthand found in value 1"
     };
     this.PRELOAD_32 = {
         parameterSchema: [REGISTER_SHORTHAND],
-        index: 22,
+        index: 21,
         name: "Preload bytes",
         description: "Reserves 4 bytes and sends the address to the register shorthand found in value 1"
     };
@@ -155,100 +159,139 @@ const opcodes = new (function opcode_list() {
     /* Register control */
     this.COPY_REG = {
         parameterSchema: [REGISTER_SHORTHAND,REGISTER_SHORTHAND],
-        index: 23,
+        index: 22,
         name: "Copy register",
         description: "Copies the value of the register shorthand in value 2 to the register shorthand of value 1"
     };
     this.SWAP_REG = {
         parameterSchema: [REGISTER_SHORTHAND,REGISTER_SHORTHAND],
-        index: 24,
+        index: 23,
         name: "Swap register",
         description: "Swaps the values by the register shorthands found in value 1 and value 2"
     };
     this.SET_ADR_8 = {
         parameterSchema: [REGISTER_SHORTHAND,REGISTER_SHORTHAND],
-        index: 25,
+        index: 24,
         name: "Set address",
         description: "Sets the variable at address of the register shorthand of register 1 by value of the register shorthand of value 2, expecting 1 byte"
     };
     this.SET_ADR_16 = {
         parameterSchema: [REGISTER_SHORTHAND,REGISTER_SHORTHAND],
-        index: 26,
+        index: 25,
         name: "Set address",
         description: "Sets the variable at address of the register shorthand of register 1 by value of the register shorthand of value 2, expecting 2 bytes"
     };
     this.SET_ADR_32 = {
         parameterSchema: [REGISTER_SHORTHAND,REGISTER_SHORTHAND],
-        index: 27,
+        index: 26,
         name: "Set address",
         description: "Sets the variable at address of the register shorthand of register 1 by value of the register shorthand of value 2, expecting 4 bytes"
     };
 
     this.GET_ADR_8 = {
         parameterSchema: [REGISTER_SHORTHAND,REGISTER_SHORTHAND],
-        index: 28,
+        index: 27,
         name: "Get variable",
-        description: "Gets 1 byte at the register shorthand of value 1 and puts it in the register shorthand of value 2",
+        description: "Gets 1 byte at the address of the register shorthand of value 1 and puts it in the register shorthand of value 2",
         secondaryDescription: "The first register shorthand is a register that contains and address"
     };
     this.GET_ADR_16 = {
         parameterSchema: [REGISTER_SHORTHAND,REGISTER_SHORTHAND],
-        index: 29,
+        index: 28,
         name: "Get variable",
-        description: "Gets 2 bytes at the register shorthand of value 1 and puts it in the register shorthand of value 2",
+        description: "Gets 2 bytes at the address of the register shorthand of value 1 and puts it in the register shorthand of value 2",
         secondaryDescription: "The first register shorthand is a register that contains and address"
     };
     this.GET_ADR_32 = {
         parameterSchema: [REGISTER_SHORTHAND,REGISTER_SHORTHAND],
-        index: 30,
+        index: 29,
         name: "Get variable",
-        description: "Gets 4 bytes at the register shorthand of value 1 and puts it in the register shorthand of value 2",
+        description: "Gets 4 bytes at the address of the register shorthand of value 1 and puts it in the register shorthand of value 2",
         secondaryDescription: "The first register shorthand is a register that contains and address"
     };
 
     this.SET_REG_8 = {
         parameterSchema: [REGISTER_SHORTHAND,VALUE_8],
-        index: 31,
+        index: 30,
         name: "Set register",
         description: "Direct to register value loading with 1 byte"
     };
     this.SET_REG_16 = {
         parameterSchema: [REGISTER_SHORTHAND,VALUE_16],
-        index: 32,
+        index: 31,
         name: "Set register",
         description: "Direct to register value loading with 2 bytes"
     };
     this.SET_REG_32 = {
         parameterSchema: [REGISTER_SHORTHAND,VALUE_32],
-        index: 33,
+        index: 32,
         name: "Set register",
         description: "Direct to register value loading with 4 bytes"
     };
 
     this.FREE_ADR_8 = {
         parameterSchema: [REGISTER_SHORTHAND],
-        index: 34,
+        index: 33,
         name: "Free memory",
         description: "Frees 1 byte of memory found at the address of register 1"
     };
     this.FREE_ADR_16 = {
         parameterSchema: [REGISTER_SHORTHAND],
-        index: 35,
+        index: 34,
         name: "Free memory",
         description: "Frees 2 bytes of memory found at the address of register 1"
     };
     this.FREE_ADR_32 = {
         parameterSchema: [REGISTER_SHORTHAND],
-        index: 36,
+        index: 35,
         name: "Free memory",
         description: "Frees 4 bytes of memory found at the address of register 1"
+    };
+    this.IN = {
+        index: 36,
+        name: "Input",
+        description: "Sends the first value of the input stream to register 1"
+    };
+    this.OUT = {
+        index: 37,
+        name: "Output",
+        description: "Sends the value of register 1 to the output stream"
+    };
+    this.NOP = {
+        index: 38,
+        name: "Dummy",
+        description: "Absolutely nothing. Sometimes helpful for program flow and control"
+    };
+
+    this.PRELOAD_BLOCK = {
+        parameterSchema: [REGISTER_SHORTHAND],
+        index: 39,
+        name: "Preload block",
+        description: "Allocates a block of the size in bytes found in register 1, returning the address of the block to register 2"
+    };
+    this.FREE_BLOCK = {
+        parameterSchema: [REGISTER_SHORTHAND,REGISTER_SHORTHAND],
+        index: 40,
+        name: "Free block",
+        description: "Frees a block of the size in bytes found in register 1, starting at the address found in register 2"
+    };
+    this.CALL = {
+        parameterSchema: [REGISTER_SHORTHAND],
+        index: 42,
+        name: "Call",
+        description: "Enters a subroutine at the specified address of the register shorthand"
+    };
+    this.RET = {
+        index: 43,
+        name: "Return",
+        description: "Exits a subroutine and returns to its entry point"
     };
 
     const operations = Object.entries(this);
     this.allOperations = [];
     operations.forEach(entry => {
         const operation = entry[1];
-        operaiton.key = entry[0];
+        operation.key = entry[0];
         if(this.allOperations[operation.index]) {
             throw Error("Operation index is used more than once");
         }
@@ -270,6 +313,7 @@ const opcodes = new (function opcode_list() {
     this.valueLoading = [
         this.LOAD_8,this.LOAD_16,this.LOAD_32,
         this.PRELOAD_8,this.PRELOAD_16,this.PRELOAD_32,
+        this.PRELOAD_BLOCK,this.FREE_BLOCK
     ];
     this.registerControl = [
         this.COPY_REG,this.SWAP_REG,
@@ -280,53 +324,59 @@ const opcodes = new (function opcode_list() {
     this.memoryRelease = [
         this.FREE_ADR_8,this.FREE_ADR_16,this.FREE_ADR_32,
     ];
-    this.programControl = [this.CMP,this.MOV,this.JMP,this.CON_JMP,this.CON_MOV];
+    this.programControl = [this.CMP,this.MOV,this.JMP,this.CON_JMP,this.CON_MOV,this.NOP,this.CALL,this.RET];
+    this.IO = [this.IN,this.OUT];
     this.registers = [
         {
-            shortHand: "reg1",
+            shortHand: "r1",
             name: "Register 1",
             description: "First value register, resulting values using register 1 and 2 typically end up here"
         },
         {
-            shortHand: "reg2",
+            shortHand: "r2",
             name: "Register 2",
             description: "A secondary register usually containing the right-hand operand"
         },
         {
-            shortHand: "reg3",
+            shortHand: "cmp",
             name: "Register 3",
             description: "A third register used for the comparison sign in cmp. Also holds the result of cmp"
         },
         {
-            shortHand: "reg4",
+            shortHand: "jmp",
             name: "Register 4",
             description: "A register for holding move and jump data to be used by jump and move"
         },
         /* 5 through 8 are generic registers. They are not modified by any side effects. */
         {
-            shortHand: "reg5",
+            shortHand: "v1",
             name: "Register 5",
             description: "Geneic register"
         },
         {
-            shortHand: "reg6",
+            shortHand: "v2",
             name: "Register 6",
             description: "Generic register"
         },
         {
-            shortHand: "reg7",
+            shortHand: "v3",
             name: "Register 7",
             description: "Generic register"
         },
         {
-            shortHand: "reg8",
+            shortHand: "v4",
             name: "Register 8",
             description: "Generic register"
         },
         {
-            shortHand: "reg9",
-            name: "Register 9 (Error register)",
-            description: "A register that is filled with a 1 byte error code for the last operation (0 if no error occured)"
+            shortHand: "arg",
+            name: "Register 9",
+            description: "Function argument register. Could contain a value or an address, depends on the higher level subroutine implementation"
+        },
+        {
+            shortHand: "ret",
+            name: "Register 10",
+            description: "Return register. Could contain a value or an address, depends on the higher level subroutine implementation"
         }
     ];
     this.registerLookup = {};
@@ -344,11 +394,21 @@ const opcodes = new (function opcode_list() {
         isZero: 6,
         isNotZero: 7,
         isFull: 8,
-        isNotFull: 9
+        isNotFull: 9,
+        "<": 3,
+        ">": 2,
+        ">=": 4,
+        "<=": 5,
+        "=": 0,
+        "!=": 1,
+        "0": 6,
+        "!0": 7,
+        "F": 8,
+        "!F": 9,
     };
     for(let i = 0;i<this.registers.length;i++) {
         this.registers[i].index = i;
     }
 })();
 export default opcodes;
-export { opcodes, REGISTER_SHORTHAND, VALUE_8, VALUE_16, VALUE_32, PARAMETER_BYTE_TABLE };
+export { opcodes, OVERFLOW, OVERFLOW_VALUES, REGISTER_SHORTHAND, VALUE_8, VALUE_16, VALUE_32, PARAMETER_BYTE_TABLE };

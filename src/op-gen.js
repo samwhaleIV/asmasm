@@ -10,7 +10,7 @@ const op_gen = new (function(){
     };
 
     const basic = opcode => {
-        return {type: opcode.key}
+        return {type: opcodes[opcode.key]};
     };
 
     const validateSize = size => {
@@ -40,13 +40,16 @@ const op_gen = new (function(){
     this.bitwise_xor = () =>                    basic(opcodes.XOR);
     this.bitwise_not = () =>                    basic(opcodes.NOT);
     this.bitwise_left_shift = () =>             basic(opcodes.L_SHIFT);
-    this.bitwise_right_shift = () =>            basic(opcodes.R_SHIFT_SIGN);
-    this.bitwise_zero_fill_right_shift = () =>  basic(opcodes.R_SHIFT);
+    this.bitwise_right_shift = () =>            basic(opcodes.R_SHIFT);
     this.compare = () =>                        basic(opcodes.CMP);
     this.move = () =>                           basic(opcodes.MOV);
     this.jump = () =>                           basic(opcodes.JMP);
     this.conditional_jump = () =>               basic(opcodes.CON_JMP);
     this.conditional_move = () =>               basic(opcodes.CON_MOV);
+    this.input = () =>                          basic(opcodes.IN);
+    this.output = () =>                         basic(opcodes.OUT);
+    this.dummy = () =>                          basic(opcodes.DUMMY);
+    this.return = () =>                         basic(opcodes.RET);
 
     this.load_bytes = (addressOutputRegister,value,size) => {
         size = validateSize(size);
@@ -100,11 +103,11 @@ const op_gen = new (function(){
             type: opcodes[`SET_ADR_${size*8}`],
             payload: {
                 value1: destinationAddressRegister,
-                value2: register2
+                value2: valueRegister
             }
         };
     };
-    this.get_from_address = (registerContainingAnAddress,targetRegister) => {
+    this.get_from_address = (registerContainingAnAddress,targetRegister,size) => {
         registerContainingAnAddress = getRegisterShorthand(registerContainingAnAddress);
         targetRegister = getRegisterShorthand(targetRegister);
         return {
@@ -138,6 +141,27 @@ const op_gen = new (function(){
         };
     };
 
+    this.preload_memory_block = registerContainingASize => {
+        registerContainingASize = getRegisterShorthand(registerContainingASize);
+        return {
+            type: opcodes.PRELOAD_BLOCK,
+            payload: {
+                value1: registerContainingASize
+            }
+        };
+    };
+    this.free_memory_block = (registerContainingASize,registerContainingAnAddress) => {
+        registerContainingASize = getRegisterShorthand(registerContainingASize);
+        registerContainingAnAddress = getRegisterShorthand(registerContainingAnAddress);
+        return {
+            type: opcodes.FREE_BLOCK,
+            payload: {
+                value1: registerContainingASize,
+                value2: registerContainingAnAddress
+            }
+        };
+    };
+
     this.get_comparison_value = comparisonValue => {
         if(!isNaN(comparisonValue)) {
             return comparisonValue;
@@ -147,7 +171,17 @@ const op_gen = new (function(){
             throw Error("Unknown comparison type");
         }
         return comparison;
-    }
+    };
+
+    this.call = registerContainingAnAddress => {
+        registerContainingAnAddress = getRegisterShorthand(registerContainingAnAddress);
+        return {
+            type: opcodes.CALL,
+            payload: {
+                value1: registerContainingAnAddress
+            }
+        }
+    };
 
 })();
 export default op_gen;

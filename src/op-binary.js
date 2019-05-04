@@ -1,11 +1,6 @@
-import { opcodes, REGISTER_SHORTHAND, VALUE_8, VALUE_16, VALUE_32, PARAMETER_BYTE_TABLE } from "./opcodes.js";
+import { opcodes, OVERFLOW, REGISTER_SHORTHAND, VALUE_8, VALUE_16, VALUE_32, PARAMETER_BYTE_TABLE } from "./opcodes.js";
 
 const UNSIGNED_START = 0;
-const OVERFLOW = {};
-OVERFLOW[VALUE_8] = Math.pow(2,8);
-OVERFLOW[VALUE_16] = Math.pow(2,16);
-OVERFLOW[VALUE_32] = Math.pow(2,32);
-
 function create_bytecode(operations) {
     let byteCount = 0;
     for(let i = 0;i<operations.length;i++) {
@@ -17,13 +12,13 @@ function create_bytecode(operations) {
     }
 
     const assemblyBytes = new ArrayBuffer(byteCount);
-    const assemblyWriter = new DataView(assemblyBytes,0,1);
+    const assemblyWriter = new DataView(assemblyBytes);
 
     let byteIndex = 0;
     for(let i = 0;i<operations.length;i++) {
         const operation = operations[i];
         const opcodeIndex = opcodes[operation.type.key].index;
-        if(opcodeIndex < UNSIGNED_START || opcodeIndex >= 256) {
+        if(opcodeIndex < UNSIGNED_START || opcodeIndex >= OVERFLOW[VALUE_8]) {
             throw Error(
                 "Opcode type is out of the unsigned 8 bit integer range.\n" +
                 "a.k.a: You're fucked. I don't know how, and this doesn't make much sense, " +
@@ -34,7 +29,7 @@ function create_bytecode(operations) {
         assemblyWriter.setUint8(byteIndex,opcodeIndex);
         byteIndex += 1;
         if(operation.type.parameterSize) {
-            for(let i = 0;i<operation.parameterSchema.length;i++) {
+            for(let i = 0;i<operation.type.parameterSchema.length;i++) {
                 const valueKey = `value${i+1}`;
                 const value = operation.payload[valueKey];
                 const parameterToken = operation.type.parameterSchema[i];
@@ -43,7 +38,11 @@ function create_bytecode(operations) {
                 }
                 switch(parameterToken) {
                     case REGISTER_SHORTHAND:
-                        assemblyWriter.setUint8(byteIndex,opcodes.registerLookup[value]);
+                        const registerLookupResult = opcodes.registerLookup[value];
+                        if(!registerLookupResult) {
+                            throw Error(`Register shorthand '${value}' is not a valid register/a register that exists`);
+                        }
+                        assemblyWriter.setUint8(byteIndex,registerLookupResult.index);
                         break;
                     case VALUE_8:
                     case VALUE_16:
