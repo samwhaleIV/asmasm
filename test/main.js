@@ -78,18 +78,13 @@ registerTest(
 
             op_gen.subroutineLabel("fib"),
                 op_gen.copy_register("v1","arg"),
-                op_gen.copy_register("r1","arg"),
+                op_gen.copy_register("r1","v1"),
                 op_gen.set_register("r2",1,4),
                 op_gen.set_register("cmp",op_gen.get_comparison_value("<="),1),
                 op_gen.compare(),
-                op_gen.set_register("jmp",op_gen.jumpLink("fib_continuation"),4),
+                op_gen.set_register("jmp",op_gen.jumpLink("fib_return"),4),
                 op_gen.conditional_jump(),
                 //else
-                    op_gen.copy_register("ret","v1"),
-                    op_gen.return(),
-        
-                //if
-                op_gen.jumpLabel("fib_continuation"),
                     op_gen.subtract(),
                     op_gen.copy_register("arg","r1"),
                     op_gen.set_register("r1",op_gen.subroutineLink("fib"),4),
@@ -108,6 +103,12 @@ registerTest(
                     op_gen.add(),
                     op_gen.copy_register("ret","r1"),
                     op_gen.return(),
+        
+                //if
+                op_gen.jumpLabel("fib_return"),
+                    op_gen.copy_register("ret","v1"),
+                    op_gen.return(),
+
 
             op_gen.jumpLabel("start"),
             op_gen.input(),
@@ -126,7 +127,8 @@ registerTest(
         console.log("Highest order operation format:",operations);
         return await interpreter.executeAssembly(operations,{
             noMemoryManagement: true,
-            registerDebug: true
+            registerDebug: false,
+            operationLog: false
         });
     }
 );

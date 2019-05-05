@@ -32,6 +32,8 @@ const JUMP_DIRECTIVE = Symbol("JUMP_DIRECTIVE");
 const RETURN_DIRECTIVE = Symbol("RETURN_DIRECTIVE");
 const CALL_DIRECTIVE = Symbol("CALL_DIRECTIVE");
 
+const OPERATION_LOG_PREFIX = "Operation: ";
+
 function get_registers_1_2(reg) {
     const a = reg.getRegister(0);
     const b = reg.getRegister(1);
@@ -132,7 +134,6 @@ const comparisons = [
     (a,b) => a === b,
     (a,b) => a !== b,
     (a,b) => a > b,
-    (a,b) => a < b,
     (a,b) => a < b,
     (a,b) => a >= b,
     (a,b) => a <= b,
@@ -390,9 +391,6 @@ const instructionProcessors = [
     },
     function output_stream(reg) {
         const register1 = reg.getRegister(0);
-        if(register1.getSize() !== 1) {
-            throw Error(EXPECTED_8_BIT_REGISTER);
-        }
         output(register1.get());
     },
     function dummy(){
@@ -433,7 +431,11 @@ const interpreter = new (function il_interpreter(){
     async function scriptExecutor(assembly,options) {
         let registers;
         let memory;
+        let logOperations = false;
         if(options) {
+            if(options.operationLog) {
+                logOperations = true;
+            }
             if(options.customMemory) {
                 memory = options.customMemory;
             } else {
@@ -466,6 +468,9 @@ const interpreter = new (function il_interpreter(){
         while(index < assembly.byteLength) {
             const operationIndex = assemblyView.getUint8(index);
             const operation = opcodes.allOperations[operationIndex];
+            if(logOperations) {
+                console.log(`${OPERATION_LOG_PREFIX}${operation.key}`);
+            }
             const stride = operation.stride;
             const directive = await instructionProcessors[operation.index](
                 registers,memory,
