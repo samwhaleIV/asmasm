@@ -17,10 +17,11 @@ function create_bytecode(operations) {
                     case op_gen_comp_type.SUBROUTINE_LABEL:
                         const isJump = operation.type === op_gen_comp_type.JUMP_LABEL;
                         const lookupTable = isJump ? jumpLookup : subroutineLookup;
-                        if(lookupTable[operation.value]) {
-                            throw Error(`Duplicate ${isJump?"jump":"subroutine"} label '${operation.value}' existence`);  
+                        if(lookupTable[operation.name]) {
+                            throw Error(`Duplicate ${isJump?"jump":"subroutine"} label '${operation.name}'`);  
                         } else {
-                            lookupTable[operation.value] = i + runningOffset;
+                            lookupTable[operation.name] = i + runningOffset;
+                            runningOffset--;
                         }
                         break;
                     case op_gen_comp_type.SUBROUTINE_LINK:
@@ -29,7 +30,6 @@ function create_bytecode(operations) {
                     default:
                         throw Error("Expected a valid operation substitution. Jump labels and subroutine labels are the only valid types");
                 }
-                runningOffset--;
                 continue;
             } else {
                 throw Error("Operations are not expected to have a sym property unless it is the compiler helper symbol");
@@ -82,7 +82,7 @@ function create_bytecode(operations) {
                         break;
                     case VALUE_32:
                         if(typeof value === "object") {
-                            if(value.sym === value.sym === COMPILER_HELPER_SYMBOL) {
+                            if(value.sym === COMPILER_HELPER_SYMBOL) {
                                 switch(value.type) {
                                     case op_gen_comp_type.JUMP_LABEL:
                                     case op_gen_comp_type.SUBROUTINE_LABEL:
@@ -91,16 +91,20 @@ function create_bytecode(operations) {
                                     case op_gen_comp_type.SUBROUTINE_LINK:
                                         const isJump = value.type === op_gen_comp_type.JUMP_LINK;
                                         const lookupTable = isJump ? jumpLookup : subroutineLookup;
-                                        const lookupResult = lookupTable[value.value];
+                                        const lookupResult = lookupTable[value.name];
                                         if(lookupResult) {
-                                            value = lookupResult;
+                                            if(lookupResult >= OVERFLOW[parameterToken]) {
+                                                throw Error(`Integer overflow for type '${parameterToken} (this value came from a ${isJump?"jump":"subroutine"} link)'`);
+                                            }
+                                            assemblyWriter.setUint32(byteIndex,lookupResult);
+                                            break;
                                         } else {
-                                            throw Error(`${isJump?"Jump":"Subroutine"} label '${value.value}' not found in assembly`);
+                                            throw Error(`${isJump?"Jump":"Subroutine"} label '${value.name}' not found in assembly`);
                                         }
-                                        break;
                                     default:
                                         throw Error("Expected a valid compiler helper type. Only links are supported, exclusively for 4 byte value replacements");
                                 }
+                                break;
                             } else {
                                 throw Error("Expected 32 bit value, not an object. Only objects containing the compiler helper symbol are parsed");
                             }

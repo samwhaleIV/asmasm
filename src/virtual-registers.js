@@ -68,5 +68,22 @@ function VirtualRegisters(options) {
         _registers[registerDefinition.index] = newRegister;
         this[registerDefinition.shortHand] = newRegister;
     }
+    this.copyRegisterStates = () => {
+        const registerStates = [];
+        for(let i = 0;i<opcodes.copyableRegisterCount;i++) {
+            const register = _registers[i];
+            registerStates[i] = {
+                value: register.get(),
+                size: register.getSize()
+            };
+        }
+        return registerStates;
+    }
+    this.applyRegisterStates = registerStates => {
+        for(let i = 0;i<opcodes.copyableRegisterCount;i++) {
+            const registerState = registerStates[i];
+            _registers[i].set(registerState.value,registerState.size);
+        }
+    }
 }
 export default VirtualRegisters;

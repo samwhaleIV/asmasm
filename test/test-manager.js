@@ -1,10 +1,11 @@
 export { runTests, registerTest }
 
 const tests = [];
-function registerTest(name,code) {
+function registerTest(name,code,skip) {
     tests.push({
         name:name,
-        code:code
+        code:code,
+        skip:skip
     });
 }
 async function runTest(test) {
@@ -24,13 +25,22 @@ function testFailed(exception,test) {
 async function runTests(raw=false) {
     if(raw) {
         for(let i = 0;i<tests.length;i++) {
+            const test = tests[i];
+            if(test.skip) {
+                continue;
+            }
             await runTest(tests[i]);
         }
         return;
     }
     let passed = 0;
+    let totalAdjustment = 0;
     for(let i = 0;i<tests.length;i++) {
         const test = tests[i];
+        if(test.skip) {
+            totalAdjustment++;
+            continue;
+        }
         try {
             const testPassed = await runTest(test);
             if(!testPassed) {
@@ -46,6 +56,7 @@ async function runTests(raw=false) {
         }
     };
     if(tests.length !== 1) {
-        console.log(`${passed}/${tests.length} tests survived their execution (${(passed/tests.length*100).toFixed(1)}%)`);
+        const total = tests.length-totalAdjustment;
+        console.log(`${passed}/${total} tests survived their execution (${(passed/total*100).toFixed(1)}%)`);
     }
 }

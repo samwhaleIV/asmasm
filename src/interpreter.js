@@ -28,7 +28,6 @@ const EXPECTED_8_BIT_REGISTER = "Expected an 8 bit register";
 const EXPECTED_16_BIT_REGISTER = "Expected a 16 bit register";
 const EXPECTED_32_BIT_REGISTER = "Expected a 32 bit register";
 
-const MOVE_DIRECTIVE = Symbol("MOVE_DIRECTIVE");
 const JUMP_DIRECTIVE = Symbol("JUMP_DIRECTIVE");
 const RETURN_DIRECTIVE = Symbol("RETURN_DIRECTIVE");
 const CALL_DIRECTIVE = Symbol("CALL_DIRECTIVE");
@@ -241,7 +240,7 @@ const instructionProcessors = [
         const registers = get_registers_1_2(reg);
         let value = registers.a.get() - registers.b.get();
         if(value < 0) {
-            value = OVERFLOW_VALUE[registers.size] - value;
+            value = OVERFLOW_VALUES[registers.size] - value;
         }
         registers.a.set(value);
     },
@@ -311,17 +310,11 @@ const instructionProcessors = [
         );
         comparisonRegister.set(result?1:0,1);
     },
-    function move(reg) {
-        return pac(reg,MOVE_DIRECTIVE);
-    },
     function jump(reg) {
         return pac(reg,JUMP_DIRECTIVE);
     },
     function conditional_jump(reg) {
         return conditional_pac(reg,JUMP_DIRECTIVE);
-    },
-    function conditional_move(reg) {
-        return conditional_pac(reg,MOVE_DIRECTIVE);
     },
     function load_bytes_8(reg,mem,idx,asm) {
         load_bytes(reg,mem,idx,asm,8);
@@ -457,12 +450,22 @@ const interpreter = new (function il_interpreter(){
         }
         const virtualStack = [];
         const assemblyView = new DataView(assembly);
+
+        const operationAddressTable = [];
         let index = 0;
+        let operationCount = 0;
         while(index < assembly.byteLength) {
             const operationIndex = assemblyView.getUint8(index);
-            const operation = opcodes.allOperations[
-                operationIndex
-            ];
+            const operation = opcodes.allOperations[operationIndex];
+            operationAddressTable[operationCount] = index;
+            operationCount++;
+            const stride = operation.stride;
+            index += stride;
+        }
+        index = 0;
+        while(index < assembly.byteLength) {
+            const operationIndex = assemblyView.getUint8(index);
+            const operation = opcodes.allOperations[operationIndex];
             const stride = operation.stride;
             const directive = await instructionProcessors[operation.index](
                 registers,memory,
@@ -471,18 +474,20 @@ const interpreter = new (function il_interpreter(){
             index += stride;
             if(directive) {
                 switch(directive.type) {
-                    case MOVE_DIRECTIVE:
-                        index += directive.value;
-                        break;
                     case JUMP_DIRECTIVE:
-                        index = directive.value;
+                        index = operationAddressTable[directive.value];
                         break;
                     case RETURN_DIRECTIVE:
-                        index = virtualStack.pop();
+                        const stackPop = virtualStack.pop();
+                        index = stackPop.index;
+                        registers.applyRegisterStates(stackPop.registerStates);
                         break;
                     case CALL_DIRECTIVE:
-                        virtualStack.push(index);
-                        index = directive.value;
+                        virtualStack.push({
+                            index:index,
+                            registerStates:registers.copyRegisterStates()
+                        });
+                        index = operationAddressTable[directive.value];
                         break;
                     default:
                         throw Error(INVALID_DIRECTIVE_ERROR);

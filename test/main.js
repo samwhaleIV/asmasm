@@ -43,7 +43,7 @@ registerTest(
         console.log("Highest order operation format:",operations);
         return true;
     }
-);
+,true);
 registerTest(
     "Operation compilation test",
     async function() {
@@ -51,7 +51,7 @@ registerTest(
         console.log("Lowest order operation format:",bytecode);
         return true;
     }
-);
+,true);
 registerTest(
     "Operation execution test",
     async function() {
@@ -67,18 +67,68 @@ registerTest(
             registerDebug: true
         });
     }
-);
-/*
+,true);
+
 registerTest(
     "Fibonacci test",
     async function() {
         const operations = [
+            op_gen.set_register("jmp",op_gen.jumpLink("start"),4),
+            op_gen.jump(),
+
+            op_gen.subroutineLabel("fib"),
+                op_gen.copy_register("v1","arg"),
+                op_gen.copy_register("r1","arg"),
+                op_gen.set_register("r2",1,4),
+                op_gen.set_register("cmp",op_gen.get_comparison_value("<="),1),
+                op_gen.compare(),
+                op_gen.set_register("jmp",op_gen.jumpLink("fib_continuation"),4),
+                op_gen.conditional_jump(),
+                //else
+                    op_gen.copy_register("ret","v1"),
+                    op_gen.return(),
+        
+                //if
+                op_gen.jumpLabel("fib_continuation"),
+                    op_gen.subtract(),
+                    op_gen.copy_register("arg","r1"),
+                    op_gen.set_register("r1",op_gen.subroutineLink("fib"),4),
+                    op_gen.call("r1"),
+                    op_gen.copy_register("v2","ret"),
+
+                    op_gen.copy_register("r1","v1"),
+                    op_gen.set_register("r2",2,4),
+                    op_gen.subtract(),
+                    op_gen.copy_register("arg","r1"),
+                    op_gen.set_register("r1",op_gen.subroutineLink("fib"),4),
+                    op_gen.call("r1"),
+                    op_gen.copy_register("r2","ret"),
+
+                    op_gen.copy_register("r1","v2"),
+                    op_gen.add(),
+                    op_gen.copy_register("ret","r1"),
+                    op_gen.return(),
+
+            op_gen.jumpLabel("start"),
+            op_gen.input(),
+
+            //Casting input from 1 byte to 4
+            op_gen.set_register("r2",0,4),
+            op_gen.swap_register("r1","r2"),
+            op_gen.add(),
+
+            op_gen.copy_register("arg","r1"),
+            op_gen.set_register("r1",op_gen.subroutineLink("fib"),4),
+            op_gen.call("r1"),
+            op_gen.copy_register("r1","ret"),
+            op_gen.output()
         ];
         console.log("Highest order operation format:",operations);
         return await interpreter.executeAssembly(operations,{
-            noMemoryManagement: true
+            noMemoryManagement: true,
+            registerDebug: true
         });
     }
 );
-*/
+
 runTests(false);

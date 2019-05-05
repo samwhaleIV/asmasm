@@ -11,6 +11,9 @@ const op_gen_comp_type = {
 const op_gen = new (function(){
 
     const getRegisterShorthand = register => {
+        if(!register) {
+            throw Error("Missing register parameter in opcode gen");
+        }
         if(!isNaN(register)) {
             return opcodes.registers[register].shortHand;
         } else {
@@ -54,10 +57,8 @@ const op_gen = new (function(){
     this.bitwise_left_shift = () =>             basic(opcodes.L_SHIFT);
     this.bitwise_right_shift = () =>            basic(opcodes.R_SHIFT);
     this.compare = () =>                        basic(opcodes.CMP);
-    this.move = () =>                           basic(opcodes.MOV);
     this.jump = () =>                           basic(opcodes.JMP);
     this.conditional_jump = () =>               basic(opcodes.CON_JMP);
-    this.conditional_move = () =>               basic(opcodes.CON_MOV);
     this.input = () =>                          basic(opcodes.IN);
     this.output = () =>                         basic(opcodes.OUT);
     this.dummy = () =>                          basic(opcodes.DUMMY);
@@ -193,31 +194,32 @@ const op_gen = new (function(){
     };
     this.jumpLabel = name => {
         return {
-            sym: COMPILER_HELPER,
+            sym: COMPILER_HELPER_SYMBOL,
             type: op_gen_comp_type.JUMP_LABEL,
             name: name
         };
     };
     this.subroutineLabel = name => {
         return {
-            sym: COMPILER_HELPER,
+            sym: COMPILER_HELPER_SYMBOL,
             type: op_gen_comp_type.SUBROUTINE_LABEL,
             name: name
         };
     };
     this.jumpLink = labelName => {
         return {
-            sym: COMPILER_HELPER,
+            sym: COMPILER_HELPER_SYMBOL,
             type: op_gen_comp_type.JUMP_LINK,
             name: labelName
         };
     };
     this.subroutineLink = labelName => {
         return {
-            sym: COMPILER_HELPER,
+            sym: COMPILER_HELPER_SYMBOL,
             type: op_gen_comp_type.SUBROUTINE_LINK,
             name: labelName
         };
     };
 })();
-export default { op_gen, op_gen_comp_type, COMPILER_HELPER_SYMBOL };
+export { op_gen, op_gen_comp_type, COMPILER_HELPER_SYMBOL };
+export default op_gen;
