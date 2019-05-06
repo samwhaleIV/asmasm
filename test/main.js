@@ -1,3 +1,4 @@
+"use strict";
 import {runTests, registerTest} from "./test-manager.js";
 import op_gen from "../src/op-gen.js";
 import create_bytecode from "../src/op-binary.js";
@@ -21,10 +22,8 @@ registerTest(
             op_gen.bitwise_left_shift(),
             op_gen.bitwise_right_shift(),
             op_gen.compare(),
-            op_gen.move(),
             op_gen.jump(),
             op_gen.conditional_jump(),
-            op_gen.conditional_move(),
             op_gen.input(),
             op_gen.output(),
             op_gen.load_bytes("r1",255,1),
@@ -43,7 +42,7 @@ registerTest(
         console.log("Highest order operation format:",operations);
         return true;
     }
-,true);
+);
 registerTest(
     "Operation compilation test",
     async function() {
@@ -51,13 +50,13 @@ registerTest(
         console.log("Lowest order operation format:",bytecode);
         return true;
     }
-,true);
+);
 registerTest(
     "Operation execution test",
     async function() {
         const operations = [
             op_gen.set_register("r1",69,1),
-            op_gen.set_register("r9",69,1),
+            op_gen.set_register("r2",69,1),
             op_gen.add(),
             op_gen.output()
         ];
@@ -67,7 +66,7 @@ registerTest(
             registerDebug: true
         });
     }
-,true);
+);
 
 registerTest(
     "Fibonacci test",
@@ -118,14 +117,16 @@ registerTest(
             op_gen.swap_register("r1","r2"),
             op_gen.add(),
 
-            op_gen.copy_register("arg","r1"),
+            op_gen.copy_register
+            ("arg","r1"),
             op_gen.set_register("r1",op_gen.subroutineLink("fib"),4),
             op_gen.call("r1"),
             op_gen.copy_register("r1","ret"),
             op_gen.output()
         ];
+        sendInput(35);
         console.log("Highest order operation format:",operations);
-        return await interpreter.executeAssembly(operations,{
+        return interpreter.executeAssembly(operations,{
             noMemoryManagement: true,
             registerDebug: false,
             operationLog: false

@@ -1,3 +1,4 @@
+"use strict";
 const outputElement = document.getElementById("output");
 const awaitingInputElement = document.getElementById("awaiting-input");
 const awaitingInputText = "Awaiting input via 'sendInput'...";
@@ -25,38 +26,18 @@ function output(text,color) {
         paragraph.style.textDecoration = "underline";
     }
 }
-const inputStack = [];
-let inputPromiseResolver = null;
+const inputStream = [];
 function sendInput(value) {
-    switch(typeof value) {
-        case "number":
-            if(isNaN(value)) {
-                console.error("Input value is NaN");
-                return;
-            }
-            if(value >= 0 && value < 256) {
-                inputStack.push(value);
-            } else {
-                console.error("Input value must be of range [0 to 255] (8-bits)");
-            }
-            break;
-        default:
-            console.error("Invalid input data type. Expected an 8-bit unsigned value");
-            return;
-    }
-    if(inputPromiseResolver) {
-        awaitingInputElement.classList.add("hidden");
-        inputPromiseResolver(inputStack.shift());
+    if(typeof value === typeof 0) {
+        if(value >= 0 && value < 256) {
+            inputStream.push(value);
+        }
     }
 }
 function getInput() {
-    if(inputStack.length) {
-        return inputStack.shift();
+    if(inputStream.length) {
+        return inputStream.shift();
+    } else {
+        return 0;
     }
-    const inputPromise = new Promise(resolve => {
-        awaitingInputElement.classList.remove("hidden");
-        console.log(`%c${awaitingInputText}`,awaitingInputLogStyle);
-        inputPromiseResolver = resolve;
-    });
-    return inputPromise;
 }

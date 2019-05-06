@@ -1,3 +1,4 @@
+"use strict";
 import { opcodes, OVERFLOW, REGISTER_SHORTHAND, VALUE_8, VALUE_16, VALUE_32, PARAMETER_BYTE_TABLE } from "./opcodes.js";
 import { COMPILER_HELPER_SYMBOL, op_gen_comp_type } from "./op-gen.js";
 
@@ -74,11 +75,16 @@ function create_bytecode(operations) {
                         assemblyWriter.setUint8(byteIndex,registerLookupResult.index);
                         break;
                     case VALUE_8:
+                        if(value >= OVERFLOW[parameterToken]) {
+                            throw Error(`Integer overflow for type '${parameterToken}'`);
+                        }
+                        assemblyWriter.setUint8(byteIndex,value);
+                        break;
                     case VALUE_16:
                         if(value >= OVERFLOW[parameterToken]) {
                             throw Error(`Integer overflow for type '${parameterToken}'`);
                         }
-                        assemblyWriter[`setUint${PARAMETER_BYTE_TABLE[parameterToken]*8}`](byteIndex,value);
+                        assemblyWriter.setUint16(byteIndex,value);
                         break;
                     case VALUE_32:
                         if(typeof value === "object") {

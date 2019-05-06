@@ -1,3 +1,4 @@
+"use strict";
 const BITWISE_IN_PLACE_DESCRIPTION = "Register 1 is modified in place by register 2";
 
 const REGISTER_SHORTHAND = "REGISTER_SHORTHAND";
@@ -329,12 +330,12 @@ const opcodes = new (function opcode_list() {
             description: "A secondary register usually containing the right-hand operand"
         },
         {
-            shortHand: "cmp",
+            shortHand: this.CMP.key.toLowerCase(),
             name: "Register 3",
             description: "A third register used for the comparison sign in cmp. Also holds the result of cmp"
         },
         {
-            shortHand: "jmp",
+            shortHand: this.JMP.key.toLowerCase(),
             name: "Register 4",
             description: "A register for jump data to be used by jump"
         },

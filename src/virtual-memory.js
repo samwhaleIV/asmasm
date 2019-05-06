@@ -1,3 +1,4 @@
+"use strict";
 const BYTES_PER_MEGABYTE = 1000000;
 const DEFAULT_DANGEROUS_BLOCK_SIZE = BYTES_PER_MEGABYTE * 10;
 const DEFAULT_FIXED_BLOCK_SIZE = BYTES_PER_MEGABYTE * 5;
@@ -9,15 +10,36 @@ function FixedVirtualMemory(size) {
     this.allocate = function(size) {}
     this.free = function free(address,size) {}
 }
+function invalidMemorySize(size) {
+    return Error(`Invalid memory size '${size}'. Expected 8, 16, or 32`); 
+}
 function DangerousVirtualMemory(size) {
     const memoryBlock = new ArrayBuffer(size || DEFAULT_DANGEROUS_BLOCK_SIZE);
     const dataView = new DataView(memoryBlock);
     let memoryPointer = 0;
     this.get = function poor_mans_compensation_for_poor_variadics_in_dataView(address,size) {
-        return dataView[`getUint${size}`](address);
+        switch(size) {
+            case 8:
+                return dataView.getUint8(address);
+            case 16:
+                return dataView.getUint16(address);
+            case 32:
+                return dataView.getUint32(address);
+            default:
+                throw invalidMemorySize(size);
+        }
     }
     this.set = function this_is_your_only_friend_who_is_also_slightly_evil(address,size,value) {
-        dataView[`setUint${size}`](address,value);
+        switch(size) {
+            case 8:
+                return dataView.setUint8(address,value);
+            case 16:
+                return dataView.setUint16(address,value);
+            case 32:
+                return dataView.setUint32(address,value);
+            default:
+                throw invalidMemorySize(size);
+        }
     }
     this.allocate = function hold_onto_with_dear_life(size) {
         const currentPointer = memoryPointer;

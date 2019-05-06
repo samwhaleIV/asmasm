@@ -1,3 +1,4 @@
+"use strict";
 import opcodes from "./opcodes.js";
 const COMPILER_HELPER_SYMBOL = Symbol("COMPILER_HELPER");
 
