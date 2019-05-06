@@ -124,12 +124,11 @@ registerTest(
             op_gen.copy_register("r1","ret"),
             op_gen.output()
         ];
-        sendInput(35);
+        sendInput(34);
         console.log("Highest order operation format:",operations);
         return interpreter.executeAssembly(operations,{
             noMemoryManagement: true,
-            registerDebug: false,
-            operationLog: false
+            registerDebug: false
         });
     }
 );

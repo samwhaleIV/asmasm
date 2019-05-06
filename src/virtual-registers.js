@@ -13,20 +13,20 @@ RegisterSizes[8] = SIZE_8;
 RegisterSizes[16] = SIZE_16;
 RegisterSizes[32] = SIZE_32;
 
-const INVALID_REGISTER_SIZE = "Invalid register size:";
 const DEBUG_PREFIX = "Register: ";
-
 function DebugRegister(definition) {
     this.definition = definition;
     this.size = SIZE_8;
-    const _value = 0;
-    Object.defineProperty(this,"value",{set:function(newValue){
-        _value = newValue;
-        console.log(`${DEBUG_PREFIX}${this.definition.shortHand} set to ${_value}`);
-    }});
-    Object.defineProperty(this,"value",{get:function(newValue){
-        return _value;
-    }});
+    let _value = 0;
+    Object.defineProperty(this,"value",{
+        get: function() {
+            return _value;
+        },
+        set: function(newValue) {
+            _value = newValue;
+            console.log(`${DEBUG_PREFIX}${this.definition.shortHand} set to ${_value}`);
+        }
+    });
     this.set = function setRegisterValue(newValue,newSize) {
         this.size = RegisterSizes[newSize];
         _value = newValue;
