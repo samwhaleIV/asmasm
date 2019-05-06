@@ -87,14 +87,14 @@ const op_gen = new (function(){
             }
         };
     };
-    this.copy_register = (to,from) => {
-        to = getRegisterShorthand(to);
+    this.copy_register = (from,to) => {
         from = getRegisterShorthand(from);
+        to = getRegisterShorthand(to);
         return {
             type: opcodes.COPY_REG,
             payload: {
-                value1: to,
-                value2: from
+                value1: from,
+                value2: to
             }
         };
     };

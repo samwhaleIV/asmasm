@@ -1,0 +1,23 @@
+{
+  "name": "asmasm",
+  "version": "1.0.0",
+  "description": "An alternative virtual assembly language",
+  "main": "asmasm.js",
+  "directories": {
+    "doc": "docs",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mistopportunity/asmasm.git"
+  },
+  "author": "mistopportunity",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/mistopportunity/asmasm/issues"
+  },
+  "homepage": "https://github.com/mistopportunity/asmasm#readme"
+}

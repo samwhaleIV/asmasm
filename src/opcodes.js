@@ -153,7 +153,7 @@ const opcodes = new (function opcode_list() {
         parameterSchema: [REGISTER_SHORTHAND,REGISTER_SHORTHAND],
         index: 20,
         name: "Copy register",
-        description: "Copies the value of the register shorthand in value 2 to the register shorthand of value 1"
+        description: "Copies the value of the register shorthand in value 1 to the register shorthand of value 2"
     };
     this.SWAP_REG = {
         parameterSchema: [REGISTER_SHORTHAND,REGISTER_SHORTHAND],

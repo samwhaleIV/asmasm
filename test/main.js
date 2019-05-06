@@ -3,7 +3,6 @@ import {runTests, registerTest} from "./test-manager.js";
 import op_gen from "../src/op-gen.js";
 import create_bytecode from "../src/op-binary.js";
 import interpreter from "../src/interpreter.js";
-import opcodes from "../src/opcodes.js";
 
 let operations;
 registerTest(
@@ -76,8 +75,8 @@ registerTest(
             op_gen.jump(),
 
             op_gen.subroutineLabel("fib"),
-                op_gen.copy_register("v1","arg"),
-                op_gen.copy_register("r1","v1"),
+                op_gen.copy_register("arg","v1"),
+                op_gen.copy_register("v1","r1"),
                 op_gen.set_register("r2",1,4),
                 op_gen.set_register("cmp",op_gen.get_comparison_value("<="),1),
                 op_gen.compare(),
@@ -85,27 +84,27 @@ registerTest(
                 op_gen.conditional_jump(),
                 //else
                     op_gen.subtract(),
-                    op_gen.copy_register("arg","r1"),
+                    op_gen.copy_register("r1","arg"),
                     op_gen.set_register("r1",op_gen.subroutineLink("fib"),4),
                     op_gen.call("r1"),
-                    op_gen.copy_register("v2","ret"),
+                    op_gen.copy_register("ret","v2"),
 
-                    op_gen.copy_register("r1","v1"),
+                    op_gen.copy_register("v1","r1"),
                     op_gen.set_register("r2",2,4),
                     op_gen.subtract(),
-                    op_gen.copy_register("arg","r1"),
+                    op_gen.copy_register("r1","arg"),
                     op_gen.set_register("r1",op_gen.subroutineLink("fib"),4),
                     op_gen.call("r1"),
-                    op_gen.copy_register("r2","ret"),
+                    op_gen.copy_register("ret","r2"),
 
-                    op_gen.copy_register("r1","v2"),
+                    op_gen.copy_register("v2","r1"),
                     op_gen.add(),
-                    op_gen.copy_register("ret","r1"),
+                    op_gen.copy_register("r1","ret"),
                     op_gen.return(),
         
                 //if
                 op_gen.jumpLabel("fib_return"),
-                    op_gen.copy_register("ret","v1"),
+                    op_gen.copy_register("v1","ret"),
                     op_gen.return(),
 
 
@@ -117,14 +116,13 @@ registerTest(
             op_gen.swap_register("r1","r2"),
             op_gen.add(),
 
-            op_gen.copy_register
-            ("arg","r1"),
+            op_gen.copy_register("r1","arg"),
             op_gen.set_register("r1",op_gen.subroutineLink("fib"),4),
             op_gen.call("r1"),
-            op_gen.copy_register("r1","ret"),
+            op_gen.copy_register("ret","r1"),
             op_gen.output()
         ];
-        sendInput(34);
+        sendInput(20);
         console.log("Highest order operation format:",operations);
         return interpreter.executeAssembly(operations,{
             noMemoryManagement: true,

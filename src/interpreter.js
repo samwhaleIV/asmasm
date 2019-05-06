@@ -29,6 +29,16 @@ const JUMP_DIRECTIVE = 0;
 const RETURN_DIRECTIVE = 1;
 const CALL_DIRECTIVE = 2;
 
+const defaultInputMethod = function() {
+    return 0;
+}
+const defaultOutputMethod = function(value) {
+    console.log(value);
+}
+
+let inputMethod = defaultInputMethod;
+let outputMethod = defaultOutputMethod;
+
 function get_registers_1_2(reg) {
     const a = reg.registers[0];
     const b = reg.registers[1];
@@ -137,7 +147,7 @@ function processComparison(value1,value2,size,type) {
     }
     return comparisons[type].call(null,value1,value2,size);
 }
-function set_address(reg,mem,prm,size) {
+function set_address_prefix(reg,_,prm,size) {
     const register1 = reg.registers[prm[0]];
     if(register1.size !== 4) {
         throw Error(EXPECTED_32_BIT_REGISTER);
@@ -155,32 +165,39 @@ function set_address(reg,mem,prm,size) {
                 throw Error(EXPECTED_32_BIT_REGISTER);
         }
     }
-    mem.set(register1.value,size,register2.value);
+    return [register1.value,register2.value];
 }
-function preload_bytes(reg,mem,prm,size) {
+function preload_bytes_8(reg,mem,prm) {
     const register1 = reg.registers[prm[0]];
-    const address = mem.allocate(size);
+    const address = mem.allocate_8(size);
     register1.set(address,32);
     return address;
 }
-function get_from_address(reg,mem,prm,size) {
+function preload_bytes_16(reg,mem,prm) {
     const register1 = reg.registers[prm[0]];
-    if(register1.size !== 4) {
-        throw Error(EXPECTED_32_BIT_REGISTER);
-    }
-    const register2 = reg.registers[prm[1]];
-    register2.set(mem.get(register1.value,size),size);
+    const address = mem.allocate_16(size);
+    register1.set(address,32);
+    return address;
+}
+function preload_bytes_32(reg,mem,prm) {
+    const register1 = reg.registers[prm[0]];
+    const address = mem.allocate_32(size);
+    register1.set(address,32);
+    return address;
 }
 function free_memory(reg,mem,prm,size) {
     const register1 = reg.registers[prm[0]];
     if(register1.size !== 4) {
         throw Error(EXPECTED_32_BIT_REGISTER);
     }
-    mem.free(register1.value,size);
+    mem.free_8(register1.value,size);
 }
 /*
     Functions that read the ASM or read or write from the virtual memory require bit count sizes: 8, 16, 32
     The virtual register set is agnostic to which you use. That it to say... 8 == 1, 16 == 2, 32 == 4
+
+    Note: This does not include preload_memory_block or free_memory_block,
+    the underlying virtual memory methods use a size parameter that is not bit multipled
 */
 const instructionProcessors = [
     function add(reg) {
@@ -274,32 +291,32 @@ const instructionProcessors = [
         }
     },
     function load_bytes_8(reg,mem,prm) {
-        const address = preload_bytes(reg,mem,prm,8);
+        const address = preload_bytes_8(reg,mem,prm);
         const value = prm[1];
-        mem.set(address,size,value);
+        mem.set_8(address,value);
     },
     function load_bytes_16(reg,mem,prm) {
-        const address = preload_bytes(reg,mem,prm,16);
+        const address = preload_bytes_16(reg,mem,prm);
         const value = prm[1];
-        mem.set(address,size,value);
+        mem.set_16(address,value);
     },
     function load_bytes_32(reg,mem,prm) {
-        const address = preload_bytes(reg,mem,prm,32);
+        const address = preload_bytes_32(reg,mem,prm);
         const value = prm[1];
-        mem.set(address,size,value);
+        mem.set_32(address,value);
     },
     function preload_bytes_8(reg,mem,prm) {
-        preload_bytes(reg,mem,prm,8);
+        preload_bytes_8(reg,mem,prm);
     },
     function preload_bytes_16(reg,mem,prm) {
-        preload_bytes(reg,mem,prm,16);
+        preload_bytes_16(reg,mem,prm);
     },
     function preload_bytes_32(reg,mem,prm) {
-        preload_bytes(reg,mem,prm,32);
+        preload_bytes_32(reg,mem,prm);
     },
     function copy_register(reg,_,prm) {
-        const register2 = reg.registers[prm[1]];
-        reg.registers[prm[0]].set(register2.value,register2.size);
+        const sourceRegister = reg.registers[prm[0]];
+        reg.registers[prm[1]].set(sourceRegister.value,sourceRegister.size);
     },
     function swap_register(reg,_,prm) {
         const register1 = reg.registers[prm[0]];
@@ -310,22 +327,40 @@ const instructionProcessors = [
         register2.set(tmpValue,tmpSize);
     },
     function set_address_8(reg,mem,prm) {
-        set_address(reg,mem,prm,8);
+        const registerValues = set_address_prefix(reg,mem,prm,8);
+        mem.set_8(registerValues[0],registerValues[1]);
     },
     function set_address_16(reg,mem,prm) {
-        set_address(reg,mem,prm,16);
+        const registerValues = set_address_prefix(reg,mem,prm,16);
+        mem.set_16(registerValues[0],registerValues[1]);
     },
     function set_address_32(reg,mem,prm) {
-        set_address(reg,mem,prm,32);
+        const registerValues = set_address_prefix(reg,mem,prm,32);
+        mem.set_32(registerValues[0],registerValues[1]);
     },
     function get_from_address_8(reg,mem,prm) {
-        get_from_address(reg,mem,prm,8);
+        const register1 = reg.registers[prm[0]];
+        if(register1.size !== 4) {
+            throw Error(EXPECTED_32_BIT_REGISTER);
+        }
+        const register2 = reg.registers[prm[1]];
+        register2.set(mem.get_8(register1.value));
     },
     function get_from_address_16(reg,mem,prm) {
-        get_from_address(reg,mem,prm,16);
+        const register1 = reg.registers[prm[0]];
+        if(register1.size !== 4) {
+            throw Error(EXPECTED_32_BIT_REGISTER);
+        }
+        const register2 = reg.registers[prm[1]];
+        register2.set(mem.get_16(register1.value));
     },
     function get_from_address_32(reg,mem,prm) {
-        get_from_address(reg,mem,prm,32);
+        const register1 = reg.registers[prm[0]];
+        if(register1.size !== 4) {
+            throw Error(EXPECTED_32_BIT_REGISTER);
+        }
+        const register2 = reg.registers[prm[1]];
+        register2.set(mem.get_32(register1.value));
     },
     function set_register_8(reg,_,prm) {
         reg.registers[prm[0]].set(prm[1],1);
@@ -337,19 +372,31 @@ const instructionProcessors = [
         reg.registers[prm[0]].set(prm[1],4);
     },
     function free_memory_8(reg,mem,prm) {
-        free_memory(reg,mem,prm,8);
+        const register1 = reg.registers[prm[0]];
+        if(register1.size !== 4) {
+            throw Error(EXPECTED_32_BIT_REGISTER);
+        }
+        mem.free_8(register1.value,size);
     },
     function free_memory_16(reg,mem,prm) {
-        free_memory(reg,mem,prm,16);
+        const register1 = reg.registers[prm[0]];
+        if(register1.size !== 4) {
+            throw Error(EXPECTED_32_BIT_REGISTER);
+        }
+        mem.free_16(register1.value,size);
     },
     function free_memory_32(reg,mem,prm) {
-        free_memory(reg,mem,prm,32);
+        const register1 = reg.registers[prm[0]];
+        if(register1.size !== 4) {
+            throw Error(EXPECTED_32_BIT_REGISTER);
+        }
+        mem.free_32(register1.value,size);
     },
     function input_stream(reg) {
-        reg.registers[0].set(getInput(),1);
+        reg.registers[0].set(inputMethod(),1);
     },
     function output_stream(reg) {
-        output(reg.registers[0].value);
+        outputMethod(reg.registers[0].value);
     },
     function dummy(){
 //This operation doesn't do anything
@@ -357,7 +404,8 @@ const instructionProcessors = [
     function preload_memory_block(reg,mem) {
         const register1 = reg.registers[0];
         const register2 = reg.registers[1];
-        const address = mem.allocate(register1.value*8);
+        //Plain allocations are in bytes and not bits, despite the disclaimer at the top of all instructions methods!
+        const address = mem.allocate(register1.value);
         register2.set(address,4);
     },
     function free_memory_block(reg,mem) {
@@ -366,7 +414,8 @@ const instructionProcessors = [
         if(register2.size !== 4) {
             throw Error(EXPECTED_32_BIT_REGISTER);
         }
-        mem.free(register2.value,register1.value*8);
+        //Plain allocations are in bytes and not bits, despite the disclaimer at the top of all instructions methods!
+        mem.free(register2.value,register1.value);
     },
     function subroutine_call(reg,_,prm) {
         const register = reg.registers[prm[0]];
@@ -384,7 +433,6 @@ const instructionProcessors = [
         };
     }
 ];
-
 function disassembleASM(asm) {
     const byteLength = asm.byteLength;
     let index = 0;
@@ -420,63 +468,84 @@ function disassembleASM(asm) {
     }
     return operations;
 }
-
-const interpreter = new (function il_interpreter(){
-    function scriptExecutor(assembly,options) {
-        let registers;
-        let memory;
-        if(options) {
-            if(options.customMemory) {
-                memory = options.customMemory;
-            } else {
-                memory = new VirtualMemory(options);
-            }
-            if(options.customRegisters) {
-                registers = options.customRegisters;
-            } else {
-                registers = new VirtualRegisters(options);
-            }
+function scriptExecutor(assembly,options) {
+    let registers;
+    let memory;
+    if(options) {
+        if(options.customMemory) {
+            memory = options.customMemory;
         } else {
-            registers = new VirtualRegisters();
-            memory = new VirtualMemory();
+            memory = new VirtualMemory(options);
         }
-        const virtualStack = [];
-        const assemblyView = new DataView(assembly);
+        if(options.customRegisters) {
+            registers = options.customRegisters;
+        } else {
+            registers = new VirtualRegisters(options);
+        }
+    } else {
+        registers = new VirtualRegisters();
+        memory = new VirtualMemory();
+    }
+    const virtualStack = [];
+    const assemblyView = new DataView(assembly);
 
-        const operations = disassembleASM(assemblyView);
-        const operationCount = operations.length;
+    const operations = disassembleASM(assemblyView);
+    const operationCount = operations.length;
 
-        let index = 0;
-        let operationsExecuted = 0;
-        const startTime = performance.now();
-        while(index < operationCount) {
-            operationsExecuted++;
-            const operation = operations[index];
-            const directive = operation[0](
-                registers,memory,operation[1]
-            );
-            index++;
-            if(directive) {
-                /*  JUMP_DIRECTIVE = 0
-                    RETURN_DIRECTIVE = 1
-                    CALL_DIRECTIVE = 2    */
-                if(directive.type > 1) { //Call
-                    virtualStack.push([index,registers.copyRegisterStates()]);
-                    index = directive.value;
-                } else if(directive.type < 1) { //Jump
-                    index = directive.value;
-                } else { //Return
-                    const stackPop = virtualStack.pop();
-                    index = stackPop[0];
-                    registers.applyRegisterStates(stackPop[1]);
-                }
+    let index = 0;
+    let operationsExecuted = 0;
+    const startTime = performance.now();
+    while(index < operationCount) {
+        operationsExecuted++;
+        const operation = operations[index];
+        const directive = operation[0](
+            registers,memory,operation[1]
+        );
+        index++;
+        if(directive) {
+            /*  JUMP_DIRECTIVE = 0
+                RETURN_DIRECTIVE = 1
+                CALL_DIRECTIVE = 2    */
+            if(directive.type > RETURN_DIRECTIVE) {
+                //Call
+                virtualStack.push([index,registers.copyRegisterStates()]);
+                index = directive.value;
+            } else if(directive.type < RETURN_DIRECTIVE) {
+                //Jump
+                index = directive.value;
+            } else {
+                //Return
+                const stackPop = virtualStack.pop();
+                index = stackPop[0];
+                registers.applyRegisterStates(stackPop[1]);
             }
         }
-        const endTime = performance.now();
-        const duration = (endTime - startTime) / 1000;
-        console.log("Script finished execution with",operationsExecuted,"operations fired","\n","Completion time (seconds):",duration.toFixed(2),"\n","Operations per second:",(operationsExecuted/duration).toFixed(2));
-    };
-
+    }
+    const endTime = performance.now();
+    const duration = (endTime - startTime) / 1000;
+    console.log(
+        "Program finished execution with",
+        operationsExecuted,
+        "operations fired","\n",
+        "Completion time (seconds):",
+        Number(duration.toFixed(2)),"\n",
+        "Operations per second:",
+        Number((operationsExecuted/duration).toFixed(2))
+    );
+};
+const interpreter = new (function(){
+    this.setInputMethod = function inputSetter(method) {
+        if(typeof method !== typeof defaultInputMethod) {
+            throw Error("Expected an input method that is a function");
+        }
+        inputMethod = method;
+    }
+    this.setOutputMethod = function outputSetter(method) {
+        if(typeof method !== typeof defaultOutputMethod) {
+            throw Error("Expected an output method that is a function");
+        }
+        outputMethod = method;
+    }
     this.executeAssembly = function(assembly,options) {
         let compiledAssembly = null;
         if(assembly.byteLength === undefined) {
