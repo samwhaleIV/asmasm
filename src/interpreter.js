@@ -528,9 +528,9 @@ function scriptExecutor(assembly,options) {
         operationsExecuted,
         "operations fired","\n",
         "Completion time (seconds):",
-        Number(duration.toFixed(2)),"\n",
+        duration,"\n",
         "Operations per second:",
-        Number((operationsExecuted/duration).toFixed(2))
+        operationsExecuted/duration
     );
 };
 const interpreter = new (function(){

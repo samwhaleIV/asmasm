@@ -4,6 +4,9 @@ import op_gen from "../src/op-gen.js";
 import create_bytecode from "../src/op-binary.js";
 import interpreter from "../src/interpreter.js";
 
+interpreter.setInputMethod(getInput);
+interpreter.setOutputMethod(output);
+
 let operations;
 registerTest(
     "Operation generation test",
