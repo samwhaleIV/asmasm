@@ -3,6 +3,7 @@ import { opcodes, OVERFLOW_VALUES, REGISTER_SHORTHAND, VALUE_8, VALUE_16, VALUE_
 import create_bytecode from "./op-binary.js";
 import VirtualMemory from "./virtual-memory.js";
 import VirtualRegisters from "./virtual-registers.js";
+import { left_shift, right_shift, not, and, or, xor } from "./bindec.js";
 
 const INCOMPATIBLE_CROSS_REGISTER_SIZE =
 "Register A is smaller than register B. The size of register B must be less than or equal to that of register A";
@@ -10,15 +11,9 @@ const INCOMPATIBLE_CROSS_REGISTER_SIZE =
 const REGISTER_SIZE_MISMATCH =
 "Register A's size must be equal to the that of Register B's";
 
-const INVALID_COMPARISON_TYPE =
-"Comparison type in register 3 must be 8 bits/1 byte";
-
 const INVALID_JUMP_REGISTER = 
 "Jump and move registers must contain 32 bit/4 byte coordinates";
 
-const INVALID_REGISTER_SIZE = "Invalid register size";
-
-const NOT_IMPLEMENTED = "This operation is not implemented";
 const ILLEGAL_ASSEMBLY_SYNTAX = "Illegal assembly syntax. This parameter schema is not expected for this operation";
 
 const EXPECTED_8_BIT_REGISTER = "Expected an 8 bit register";
@@ -28,6 +23,21 @@ const EXPECTED_32_BIT_REGISTER = "Expected a 32 bit register";
 const JUMP_DIRECTIVE = 0;
 const RETURN_DIRECTIVE = 1;
 const CALL_DIRECTIVE = 2;
+
+const regSizeOffset = 1;
+const r1Value = 0;
+const r2Value = 2;
+const cmpValue = 4;
+const jmpValue = 6;
+
+const r1Size = r1Value + regSizeOffset;
+const r2Size = r2Value + regSizeOffset;
+const cmpSize = cmpValue + regSizeOffset;
+const jmpSize = jmpValue + regSizeOffset;
+
+const BYTE_1 = 1;
+const BYTE_2 = 2;
+const BYTE_4 = 4;
 
 const defaultInputMethod = function() {
     return 0;
@@ -39,254 +49,127 @@ const defaultOutputMethod = function(value) {
 let inputMethod = defaultInputMethod;
 let outputMethod = defaultOutputMethod;
 
-function get_registers_1_2(reg) {
-    const a = reg.registers[0];
-    const b = reg.registers[1];
-    if(a.size < b.size) {
+function validate_registers_1_2(reg) {
+    if(reg[r1Size] < reg[r2Size]) {
         throw Error(INCOMPATIBLE_CROSS_REGISTER_SIZE);
     }
-    return [a,b,a.size];
 }
-function get_registers_1_2_size_matched(reg) {
-    const a = reg.registers[0];
-    const b = reg.registers[1];
-    if(a.size !== b.size) {
+function validate_registers_1_2_size_matched(reg) {
+    if(reg[r1Size] !== reg[r2Size]) {
         throw Error(REGISTER_SIZE_MISMATCH);
     }
-    return [a,b,a.size];
-}
-/* Adapted from https://www.w3schools.com/js/js_bitwise.asp
-   ======================================================== */
-function dec2bin(dec,size){
-    return dec.toString(2).padStart(size,"0");
-}
-function bin2dec(bin){
-    return parseInt(bin,2).toString(10);
-}
-/* ======================================================== */
-
-function right_shift(a,b,size) {
-    const bitCount = size * 8;
-    let aBits = dec2bin(a,b,bitCount);
-    aBits = aBits.substring(0,bitCount-b).padStart(bitCount,"0");
-    return bin2dec(aBits);
-}
-function left_shift(a,b,size) {
-    const bitCount = size * 8;
-    let aBits = dec2bin(a,b,bitCount);
-    aBits = aBits.substring(b).padEnd(bitCount,"0");
-    return bin2dec(aBits);
-}
-function not(a,size) {
-    const bitCount = size * 8;
-    let aBits = dec2bin(a,b,bitCount);
-    for(let i = 0;i<aBits.length;i++) {
-        if(aBits[i] == 0) {
-            aBits[i] = 1;
-        } else {
-            aBits[i] = 0;
-        }
-    }
-    return bin2dec(aBits);
-}
-function and(a,b,size) {
-    const bitCount = size * 8;
-    let aBits = dec2bin(a,b,bitCount);
-    const bBits = dec2bin(a,b,bitCount);
-    for(let i = 0;i<aBits.length;i++) {
-        if(aBits[i] == 1 && bBits[i] == 1) {
-            aBits[i] = 1;
-        } else {
-            aBits[i] = 0;
-        }
-    }
-    return bin2dec(aBits);
-}
-function or(a,b,size) {
-    const bitCount = size * 8;
-    let aBits = dec2bin(a,b,bitCount);
-    const bBits = dec2bin(a,b,bitCount);
-    for(let i = 0;i<aBits.length;i++) {
-        if(aBits[i] == 1 || bBits[i] == 1) {
-            aBits[i] = 1;
-        } else {
-            aBits[i] = 0;
-        }
-    }
-    return bin2dec(aBits);
-}
-function xor(a,b,size) {
-    const bitCount = size * 8;
-    let aBits = dec2bin(a,b,bitCount);
-    const bBits = dec2bin(a,b,bitCount);
-    for(let i = 0;i<aBits.length;i++) {
-        if(aBits[i] != bBits[i]) {
-            aBits[i] = 1;
-        } else {
-            aBits[i] = 0;
-        }
-    }
-    return bin2dec(aBits);
 }
 const comparisons = [
-    function equal(a,b){return a === b},
-    function notEqual(a,b){return a !== b},
+    function equal(a,b){return a == b},
+    function notEqual(a,b){return a != b},
     function lessThan(a,b){return a > b},
     function greaterThan(a,b){return a < b},
     function greaterThanOrEqual(a,b){return a >= b},
     function lessThanOrEqual(a,b){return a <= b},
-    function isZero(a){return a === 0},
-    function isNotZero(a){return a !== 0},
-    function isFull(a,_,size){return a === OVERFLOW_VALUES[size]-1},
-    function isNotFull(a,_,size){return a !== OVERFLOW_VALUES[size]-1}
+    function isZero(a){return a == 0},
+    function isNotZero(a){return a != 0},
+    function isFull(a,_,size){return a == OVERFLOW_VALUES[size]-1},
+    function isNotFull(a,_,size){return a != OVERFLOW_VALUES[size]-1}
 ];
-const comparisonCount = comparisons.length;
-function processComparison(value1,value2,size,type) {
-    if(type >= comparisonCount) {
-        throw Error(INVALID_COMPARISON_TYPE);
-    }
-    return comparisons[type].call(null,value1,value2,size);
-}
-function set_address_prefix(reg,_,prm,size) {
-    const register1 = reg.registers[prm[0]];
-    if(register1.size !== 4) {
-        throw Error(EXPECTED_32_BIT_REGISTER);
-    }
-    const register2 = reg.registers[prm[1]];
-    if(register2.size !== size) {
-        switch(size) {
-            default:
-                throw Error(INVALID_REGISTER_SIZE);
-            case 8:
-                throw Error(EXPECTED_8_BIT_REGISTER);
-            case 16:
-                throw Error(EXPECTED_16_BIT_REGISTER);
-            case 32:
-                throw Error(EXPECTED_32_BIT_REGISTER);
-        }
-    }
-    return [register1.value,register2.value];
-}
 function preload_bytes_8(reg,mem,prm) {
-    const register1 = reg.registers[prm[0]];
     const address = mem.allocate_8(size);
-    register1.set(address,32);
+    reg[prm[0]] = address;
+    reg[prm[0]+regSizeOffset] = BYTE_1;
     return address;
 }
 function preload_bytes_16(reg,mem,prm) {
-    const register1 = reg.registers[prm[0]];
     const address = mem.allocate_16(size);
-    register1.set(address,32);
+    reg[prm[0]] = address;
+    reg[prm[0]+regSizeOffset] = BYTE_2;
     return address;
 }
 function preload_bytes_32(reg,mem,prm) {
-    const register1 = reg.registers[prm[0]];
     const address = mem.allocate_32(size);
-    register1.set(address,32);
+    reg[prm[0]] = address;
+    reg[prm[0]+regSizeOffset] = BYTE_4;
     return address;
 }
-function free_memory(reg,mem,prm,size) {
-    const register1 = reg.registers[prm[0]];
-    if(register1.size !== 4) {
-        throw Error(EXPECTED_32_BIT_REGISTER);
-    }
-    mem.free_8(register1.value,size);
-}
-/*
-    Functions that read the ASM or read or write from the virtual memory require bit count sizes: 8, 16, 32
-    The virtual register set is agnostic to which you use. That it to say... 8 == 1, 16 == 2, 32 == 4
-
-    Note: This does not include preload_memory_block or free_memory_block,
-    the underlying virtual memory methods use a size parameter that is not bit multipled
-*/
 const instructionProcessors = [
     function add(reg) {
-        const registers = get_registers_1_2(reg);
-        let value = registers[0].value + registers[1].value;
-        const overflowPoint = OVERFLOW_VALUES[registers[2]];
+        validate_registers_1_2(reg);
+        let value = reg[r1Value] + reg[r2Value];
+        const overflowPoint = OVERFLOW_VALUES[reg[r1Size]];
         if(value >= overflowPoint) {
             value = value - overflowPoint;
         }
-        registers[0].value = value;
+        reg[r1Value] = value;
     },
     function subtract(reg) {
-        const registers = get_registers_1_2(reg);
-        let value = registers[0].value - registers[1].value;
+        validate_registers_1_2(reg);
+        let value = reg[r1Value] - reg[r2Value];
         if(value < 0) {
-            value = OVERFLOW_VALUES[registers[2]] - value;
+            value = OVERFLOW_VALUES[reg[r1Size]] - value;
         }
-        registers[0].value = value;
+        reg[r1Value] = value;
     },
     function multiply(reg) {
-        const registers = get_registers_1_2(reg);
-        registers[0].value = (registers[0].value * registers[1].value) % OVERFLOW_VALUES[registers[2]];
+        validate_registers_1_2(reg);
+        reg[r1Value] = (reg[r1Value] * reg[r2Value]) % OVERFLOW_VALUES[reg[r1Size]];
     },
     function divide(reg) {
-        const registers = get_registers_1_2(reg);
-        registers[0].value = Math.floor(registers[0].value / registers[1].value);
+        validate_registers_1_2(reg);
+        reg[r1Value] = Math.floor(reg[r1Value] / reg[r2Value]);
     }, 
     function modulus(reg) {
-        const registers = get_registers_1_2(reg);
-        registers[0].value = registers[0].value % registers[1].value;
+        validate_registers_1_2(reg);
+        reg[r1Value] = reg[r1Value] % reg[r2Value];
     },
     function bitwise_and(reg) {
-        const registers = get_registers_1_2_size_matched(reg);
-        registers[0].value = and(registers[0].value,registers[1].value,registers[2]);
+        validate_registers_1_2_size_matched(reg);
+        reg[r1Value] = and(reg[r1Value],reg[r2Value],reg[r1Size]);
     },
     function bitwise_or(reg) {
-        const registers = get_registers_1_2_size_matched(reg);
-        registers[0].value = or(registers[0].value,registers[1].value,registers[2]);
+        validate_registers_1_2_size_matched(reg);
+        reg[r1Value] = or(reg[r1Value],reg[r2Value],reg[r1Size]);
     },
     function bitwise_xor(reg) {
-        const registers = get_registers_1_2_size_matched(reg);
-        registers[0].value = xor(registers[0].value,registers[1].value,registers[2]);
+        validate_registers_1_2_size_matched(reg);
+        reg[r1Value] = xor(reg[r1Value],reg[r2Value],reg[r1Size]);
     },
     function bitwise_not(reg) {
-        const register = reg.registers[0];
-        registers[0].value = not(register.value,register.size);
+        reg[r1Value] = not(reg[r1Value],reg[r1Size]);
     },
     function bitwise_left_shift(reg) {
-        const registers = get_registers_1_2_size_matched(reg);
-        registers[0].value = left_shift(registers[0].value,registers[1].value,registers[2]);
+        validate_registers_1_2_size_matched(reg);
+        reg[r1Value] = left_shift(reg[r1Value],reg[r2Value],reg[r1Size]);
     },
     function bitwise_right_shift(reg) {
-        const registers = get_registers_1_2_size_matched(reg);
-        registers[0].value = right_shift(registers[0].value,registers[1].value,registers[2]);
+        validate_registers_1_2_size_matched(reg);
+        reg[r1Value] = right_shift(reg[r1Value],reg[r2Value],reg[r1Size]);
     },
     function compare(reg) {
-        const register1 = reg.registers[0];
-        const register2 = reg.registers[1];
-        const comparisonRegister = reg.registers[2];
-        if(comparisonRegister.size !== 1) {
-            throw Error(INVALID_COMPARISON_TYPE);
+        if(reg[cmpSize] !== BYTE_1) {
+            throw Error(EXPECTED_8_BIT_REGISTER);
         }
-        const result = processComparison(
-            register1.value,
-            register2.value,
-            register1.size,
-            comparisonRegister.value
-        );
-        comparisonRegister.set(result?1:0,1);
+        reg[cmpValue] = comparisons[reg[cmpValue]](
+            reg[r1Value],
+            reg[r2Value],
+            reg[r1Size]
+        ) ? 1 : 0;
+        reg[cmpSize] = BYTE_1;
     },
     function jump(reg) {
-        const register4 = reg.registers[3];
-        if(register4.size !== 4) {
+        if(reg[jmpSize] !== BYTE_4) {
             throw Error(INVALID_JUMP_REGISTER);
         }
         return {
             type: JUMP_DIRECTIVE,
-            value: register4.value
+            value: reg[jmpValue]
         };
     },
     function conditional_jump(reg) {
-        const register4 = reg.registers[3];
-        if(register4.size !== 4) {
+        if(reg[jmpSize] !== BYTE_4) {
             throw Error(INVALID_JUMP_REGISTER);
         }
-        if(reg.registers[2].value >= 1) {
+        if(reg[cmpValue] >= 1) {
             return {
                 type: JUMP_DIRECTIVE,
-                value: register4.value
+                value: reg[jmpValue]
             };
         }
     },
@@ -315,116 +198,123 @@ const instructionProcessors = [
         preload_bytes_32(reg,mem,prm);
     },
     function copy_register(reg,_,prm) {
-        const sourceRegister = reg.registers[prm[0]];
-        reg.registers[prm[1]].set(sourceRegister.value,sourceRegister.size);
+        reg[prm[1]] = reg[prm[0]];
+        reg[prm[1]+regSizeOffset] = reg[prm[0]+regSizeOffset];
     },
     function swap_register(reg,_,prm) {
-        const register1 = reg.registers[prm[0]];
-        const register2 = reg.registers[prm[1]];
-        const tmpSize = register1.size;
-        const tmpValue = register1.value;
-        register1.set(register2.value,register2.size);
-        register2.set(tmpValue,tmpSize);
+        const tmpValue = reg[prm[0]];
+        const tmpSize = reg[prm[0]+regSizeOffset];
+        reg[prm[0]] = reg[prm[1]];
+        reg[prm[0]+regSizeOffset] = reg[prm[1]+regSizeOffset];
+        reg[prm[1]] = tmpValue;
+        reg[prm[1]+regSizeOffset] = tmpSize;
     },
     function set_address_8(reg,mem,prm) {
-        const registerValues = set_address_prefix(reg,mem,prm,8);
-        mem.set_8(registerValues[0],registerValues[1]);
+        if(reg[prm[0]+regSizeOffset] !== BYTE_4) {
+            throw Error(EXPECTED_32_BIT_REGISTER);
+        }
+        if(reg[prm[1]+regSizeOffset] !== BYTE_1) {
+            throw Error(EXPECTED_8_BIT_REGISTER);
+        }
+        mem.set_8(reg[prm[0]],reg[prm[1]]);
     },
     function set_address_16(reg,mem,prm) {
-        const registerValues = set_address_prefix(reg,mem,prm,16);
-        mem.set_16(registerValues[0],registerValues[1]);
+        if(reg[prm[0]+regSizeOffset] !== BYTE_4) {
+            throw Error(EXPECTED_32_BIT_REGISTER);
+        }
+        if(reg[prm[1]+regSizeOffset] !== BYTE_2) {
+            throw Error(EXPECTED_16_BIT_REGISTER);
+        }
+        mem.set_16(reg[prm[0]],reg[prm[1]]);
     },
     function set_address_32(reg,mem,prm) {
-        const registerValues = set_address_prefix(reg,mem,prm,32);
-        mem.set_32(registerValues[0],registerValues[1]);
+        if(reg[prm[0]+regSizeOffset] !== BYTE_4) {
+            throw Error(EXPECTED_32_BIT_REGISTER);
+        }
+        if(reg[prm[1]+regSizeOffset] !== BYTE_4) {
+            throw Error(EXPECTED_32_BIT_REGISTER);
+        }
+        mem.set_32(reg[prm[0]],reg[prm[1]]);
     },
     function get_from_address_8(reg,mem,prm) {
-        const register1 = reg.registers[prm[0]];
-        if(register1.size !== 4) {
+        if(reg[prm[0]+regSizeOffset] !== BYTE_4) {
             throw Error(EXPECTED_32_BIT_REGISTER);
         }
-        const register2 = reg.registers[prm[1]];
-        register2.set(mem.get_8(register1.value));
+        reg[prm[1]] = mem.get_8(reg[prm[0]]);
+        reg[prm[1]+regSizeOffset] = BYTE_1;
     },
     function get_from_address_16(reg,mem,prm) {
-        const register1 = reg.registers[prm[0]];
-        if(register1.size !== 4) {
+        if(reg[prm[0]+regSizeOffset] !== BYTE_4) {
             throw Error(EXPECTED_32_BIT_REGISTER);
         }
-        const register2 = reg.registers[prm[1]];
-        register2.set(mem.get_16(register1.value));
+        reg[prm[1]] = mem.get_16(reg[prm[0]]);
+        reg[prm[1]+regSizeOffset] = BYTE_2;
     },
     function get_from_address_32(reg,mem,prm) {
-        const register1 = reg.registers[prm[0]];
-        if(register1.size !== 4) {
+        if(reg[prm[0]+regSizeOffset] !== BYTE_4) {
             throw Error(EXPECTED_32_BIT_REGISTER);
         }
-        const register2 = reg.registers[prm[1]];
-        register2.set(mem.get_32(register1.value));
+        reg[prm[1]] = mem.get_32(reg[prm[0]]);
+        reg[prm[1]+regSizeOffset] = BYTE_4;
     },
     function set_register_8(reg,_,prm) {
-        reg.registers[prm[0]].set(prm[1],1);
+        reg[prm[0]] = prm[1];
+        reg[prm[0]+regSizeOffset] = BYTE_1;
     },
     function set_register_16(reg,_,prm) {
-        reg.registers[prm[0]].set(prm[1],2);
+        reg[prm[0]] = prm[1];
+        reg[prm[0]+regSizeOffset] = BYTE_2;
     },
     function set_register_32(reg,_,prm) {
-        reg.registers[prm[0]].set(prm[1],4);
+        reg[prm[0]] = prm[1];
+        reg[prm[0]+regSizeOffset] = BYTE_4;
     },
     function free_memory_8(reg,mem,prm) {
-        const register1 = reg.registers[prm[0]];
-        if(register1.size !== 4) {
+        if(reg[prm[0]+regSizeOffset] !== BYTE_4) {
             throw Error(EXPECTED_32_BIT_REGISTER);
         }
-        mem.free_8(register1.value,size);
+        mem.free_8(reg[prm[0]]);
     },
     function free_memory_16(reg,mem,prm) {
-        const register1 = reg.registers[prm[0]];
-        if(register1.size !== 4) {
+        if(reg[prm[0]+regSizeOffset] !== BYTE_4) {
             throw Error(EXPECTED_32_BIT_REGISTER);
         }
-        mem.free_16(register1.value,size);
+        mem.free_16(reg[prm[0]]);
     },
     function free_memory_32(reg,mem,prm) {
-        const register1 = reg.registers[prm[0]];
-        if(register1.size !== 4) {
+        if(reg[prm[0]+regSizeOffset] !== BYTE_4) {
             throw Error(EXPECTED_32_BIT_REGISTER);
         }
-        mem.free_32(register1.value,size);
+        mem.free_32(reg[prm[0]]);
     },
     function input_stream(reg) {
-        reg.registers[0].set(inputMethod(),1);
+        reg[r1Value] = inputMethod();
+        reg[r1Size] = BYTE_1;
     },
     function output_stream(reg) {
-        outputMethod(reg.registers[0].value);
+        outputMethod(reg[r1Value]);
     },
     function dummy(){
-//This operation doesn't do anything
+        return undefined;
     },
     function preload_memory_block(reg,mem) {
-        const register1 = reg.registers[0];
-        const register2 = reg.registers[1];
-        //Plain allocations are in bytes and not bits, despite the disclaimer at the top of all instructions methods!
-        const address = mem.allocate(register1.value);
-        register2.set(address,4);
+        const address = mem.allocate(reg[r1Value]);
+        reg[r2Value] = address;
+        reg[r2Size] = BYTE_4;
     },
     function free_memory_block(reg,mem) {
-        const register1 = reg.registers[0];
-        const register2 = reg.registers[0];
-        if(register2.size !== 4) {
+        if(reg[r2Size] !== BYTE_4) {
             throw Error(EXPECTED_32_BIT_REGISTER);
         }
-        //Plain allocations are in bytes and not bits, despite the disclaimer at the top of all instructions methods!
-        mem.free(register2.value,register1.value);
+        mem.free(reg[r2Value],reg[r1Value]);
     },
     function subroutine_call(reg,_,prm) {
-        const register = reg.registers[prm[0]];
-        if(register.size !== 4) {
+        if(reg[prm[0]+regSizeOffset] !== BYTE_4) {
             throw Error(EXPECTED_32_BIT_REGISTER);
         }
         return {
             type: CALL_DIRECTIVE,
-            value: register.value
+            value: reg[prm[0]]
         };
     },
     function subroutine_return() {
@@ -433,6 +323,10 @@ const instructionProcessors = [
         };
     }
 ];
+function translateRegisterParameter(trueRegisterIndex) {
+    const runtimeReadyRegisterIndex = trueRegisterIndex * 2;
+    return runtimeReadyRegisterIndex;
+}
 function disassembleASM(asm) {
     const byteLength = asm.byteLength;
     let index = 0;
@@ -448,6 +342,10 @@ function disassembleASM(asm) {
                 const parameter = operation.parameterSchema[i];
                 switch(parameter) {
                     case REGISTER_SHORTHAND:
+                        const translatedRegisterParameter =
+                        translateRegisterParameter(asm.getUint8(index));
+                        parameters.push(translatedRegisterParameter);
+                        break;
                     case VALUE_8:
                         parameters.push(asm.getUint8(index));
                         break;
@@ -492,29 +390,26 @@ function scriptExecutor(assembly,options) {
     const operations = disassembleASM(assemblyView);
     const operationCount = operations.length;
 
+    const registerData = registers.data;
+
     let index = 0;
     let operationsExecuted = 0;
     const startTime = performance.now();
+
     while(index < operationCount) {
         operationsExecuted++;
         const operation = operations[index];
         const directive = operation[0](
-            registers,memory,operation[1]
+            registerData,memory,operation[1]
         );
         index++;
         if(directive) {
-            /*  JUMP_DIRECTIVE = 0
-                RETURN_DIRECTIVE = 1
-                CALL_DIRECTIVE = 2    */
             if(directive.type > RETURN_DIRECTIVE) {
-                //Call
                 virtualStack.push([index,registers.copyRegisterStates()]);
                 index = directive.value;
             } else if(directive.type < RETURN_DIRECTIVE) {
-                //Jump
                 index = directive.value;
             } else {
-                //Return
                 const stackPop = virtualStack.pop();
                 index = stackPop[0];
                 registers.applyRegisterStates(stackPop[1]);

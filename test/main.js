@@ -125,7 +125,7 @@ registerTest(
             op_gen.copy_register("ret","r1"),
             op_gen.output()
         ];
-        sendInput(20);
+        sendInput(32);
         console.log("Highest order operation format:",operations);
         return interpreter.executeAssembly(operations,{
             noMemoryManagement: true,
@@ -133,5 +133,9 @@ registerTest(
         });
     }
 );
-
-runTests(false);
+setTimeout(function(){
+    output("Tests starting in 1 second...");
+    setTimeout(function(){
+        runTests(false);
+    },1000);
+},100);

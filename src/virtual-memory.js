@@ -8,16 +8,19 @@ function FixedVirtualMemory(size) {
 }
 function DangerousVirtualMemory(size) {
     const memoryBlock = new ArrayBuffer(size || DEFAULT_DANGEROUS_BLOCK_SIZE);
-    const dataView = new DataView(memoryBlock);
+    const u8 = new Uint8Array(memoryBlock);
+    const u16 = new Uint16Array(memoryBlock);
+    const u32 = new Uint32Array(memoryBlock);
+
     let memoryPointer = 0;
     function get_8(address) {
-        return dataView.getUint8(address);
+        return u8[address];
     }
     function get_16(address) {
-        return dataView.getUint16(address);
+        return u16[address];
     }
     function get_32(address) {
-        return dataView.getUint32(address);
+        return u32[address];
     }
     const getLookup = [];
     getLookup[8] = get_8;
@@ -26,17 +29,17 @@ function DangerousVirtualMemory(size) {
     this.get_8 = get_8;
     this.get_16 = get_16;
     this.get_32 = get_32;
-    this.get = function poor_mans_compensation_for_poor_variadics_in_dataView(address,size) {
+    this.get = function(address,size) {
         return getLookup[size].call(null,address);
     }
     function set_8(address,value) {
-        dataView.setUint8(address,value);
+        u8[address] = value;
     }
     function set_16(address,value) {
-        dataView.setUint16(address,value);
+        u16[address] = value;
     }
     function set_32(address,value) {
-        dataView.setUint32(address,value);
+        u32[address] = value;
     }
     const setLookup = [];
     setLookup[8] = set_8;
