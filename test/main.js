@@ -136,6 +136,9 @@ registerTest(
 setTimeout(function(){
     output("Tests starting in 1 second...");
     setTimeout(function(){
-        runTests(false);
+        output("and awayyyy we GoooOOoOOoooooo....")
+        setTimeout(function(){
+            runTests(false);
+        },30);
     },1000);
-},100);
+},30);

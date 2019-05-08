@@ -1,5 +1,6 @@
 "use strict";
-export { left_shift, right_shift, not, and, or, xor }
+const BIT_8 = 8;
+export { left_shift, right_shift, not, and, or, xor, right_shift_sign }
 //Adapted from https://www.w3schools.com/js/js_bitwise.asp
 function dec2bin(dec,size){
     return dec.toString(2).padStart(size,"0");
@@ -11,6 +12,12 @@ function right_shift(a,b,size) {
     const bitCount = size * BIT_8;
     let aBits = dec2bin(a,b,bitCount);
     aBits = aBits.substring(0,bitCount-b).padStart(bitCount,"0");
+    return bin2dec(aBits);
+}
+function right_shift_sign(a,b,size) {
+    const bitCount = size * BIT_8;
+    let aBits = dec2bin(a,b,bitCount);
+    aBits = aBits.substring(0,bitCount-b).padStart(bitCount,aBits[0]);
     return bin2dec(aBits);
 }
 function left_shift(a,b,size) {

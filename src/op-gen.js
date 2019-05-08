@@ -31,7 +31,7 @@ const op_gen = new (function(){
         if(size === 1 || size === 2 || size === 4) {
             return size;
         } else {
-            throw Error("Invalid parameter byte size. Must be 1, 2, or 4")
+            throw Error("Invalid parameter byte size. Must be 1, 2, 4, or 8")
         }
     };
     const validateValue = (value,size) => {
@@ -57,6 +57,7 @@ const op_gen = new (function(){
     this.bitwise_not = () =>                    basic(opcodes.NOT);
     this.bitwise_left_shift = () =>             basic(opcodes.L_SHIFT);
     this.bitwise_right_shift = () =>            basic(opcodes.R_SHIFT);
+    this.bitwise_right_shift_sign = () =>       basic(opcodes.R_SHIFT_S);
     this.compare = () =>                        basic(opcodes.CMP);
     this.jump = () =>                           basic(opcodes.JMP);
     this.conditional_jump = () =>               basic(opcodes.CON_JMP);

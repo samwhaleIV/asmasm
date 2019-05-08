@@ -1,2 +1,2 @@
 #### Using in JavaScript
-What's great about JavaScript is that - for the most part - the same code can run both in the browser and the 
+What's great about JavaScript is that - for the most part - the same code can run both in the browser and in a traditional application sense through node.js. Though, there are caveats. Using JavaScript to in turn intrepret bytecode is a crime against CPU cycles. Though I've optimizied to what I think is the maximum efficiency without sending this project down the road of eval hell

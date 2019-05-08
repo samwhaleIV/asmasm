@@ -25,28 +25,23 @@ OVERFLOW_VALUES[4] = OVERFLOW[VALUE_32];
 const opcodes = new (function opcode_list() {
 
     this.ADD = {
-        index: 0,
         name: "Add",
         description: "Register 2 is added to register 1 in place"
     };
     this.SUB = {
-        index: 1,
         name: "Subtract",
         description: "Register 1 is subtracted by register 2 in place"
     };
     this.MTP = {
-        index: 2,
         name: "Multiply",
         description: "Register 1 is multiplied by register 2 in place"
     };
     this.DIV = {
-        index: 3,
         name: "Divide",
         description: "Register 1 (dividend) is divided by register 2 (divisor) and the result is sent to register 1 (in place)"
     };
     this.MOD = {
     /* The resulting sign of modulus is intended to be the sign of the dividend, following JavaScript */
-        index: 4,
         name: "Modulus",
         description: "Register 1 (dividend) is modulated by register 2 (divisor) and the result is sent to register 1"
     };
@@ -55,56 +50,52 @@ const opcodes = new (function opcode_list() {
     https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Bitwise_Operators
 */
     this.AND = {
-        index: 5,
         name: "Bitwise AND",
         description: BITWISE_IN_PLACE_DESCRIPTION,
         secondaryDescription: "A [1] in each bit position for which the corresponding bits of both operands are [1]s"
     };
     this.OR = {
-        index: 6,
         name: "Bitwise OR",
         description: BITWISE_IN_PLACE_DESCRIPTION,
         secondaryDescription: "A [1] in each bit position for which the corresponding bits of either or both operands are [1]s"
     };
     this.XOR = {
-        index: 7,
         name: "Bitwise XOR",
         description: BITWISE_IN_PLACE_DESCRIPTION,
         secondaryDescription: "A [1] in each bit position for which the corresponding bits of either but not both operands are [1]s"
     };
     this.NOT = {
-        index: 8,
         name: "Bitwise NOT",
         description: "Register 1 is bit inverted in place",
         secondaryDescription: "Inverts the bits of its operand"
     };
     this.L_SHIFT = {
-        index: 9,
         name: "Left shift",
         description: BITWISE_IN_PLACE_DESCRIPTION,
-        secondaryDescription: "Shifts [a] in binary representation [b] (< 32) bits to the left, shifting in [0]s from the right"
+        secondaryDescription: "Shifts [a] in binary representation [b] to the left, shifting in [0]s from the right"
     };
     this.R_SHIFT = {
-        index: 10,
         name: "Zero fill right shift",
         description: BITWISE_IN_PLACE_DESCRIPTION,
-        secondaryDescription: "Shifts [a] in binary representation [b] (< 32) bits to the right, shifting in [0]s from the left"
+        secondaryDescription: "Shifts [a] in binary representation [b] to the right, shifting in [0]s from the left"
+    };
+    this.R_SHIFT_S = {
+        name: "Sign preserving right shift",
+        description: BITWISE_IN_PLACE_DESCRIPTION,
+        secondaryDescription: "Shifts [a] in binary representation [b] to the right, discarding bits shifted off"
     };
 
     /* Program control (flow) */
     this.CMP = {
-        index: 11,
         name: "Compare",
         description: "Compares register 1 to register 2 using the comparison type by register 3, a comparison byte result going to register 3. Depending on the sign, register 2 might not be used"
     };
 
     this.JMP = {
-        index: 12,
         name: "Jump",
         description: "Jumps to a location specified by register 4"
     };
     this.CON_JMP = {
-        index: 13,
         name: "Conditional jump",
         description: "If the comparison register (3) is true, jumps to the location specified by register 4. Otherwise flow is continued as normal"
     };
@@ -112,38 +103,32 @@ const opcodes = new (function opcode_list() {
     /* Value loading */
     this.LOAD_8 = {
         parameterSchema: [REGISTER_SHORTHAND,VALUE_8],
-        index: 14,
         name: "Load bytes",
         description: "Loads 1 byte from value 2 and sends the address to the register shorthand found in value 1"
     };
     this.LOAD_16 = {
         parameterSchema: [REGISTER_SHORTHAND,VALUE_16],
-        index: 15,
         name: "Load bytes",
         description: "Loads 2 bytes from value 2 and sends the address to the register shorthand found in value 1"
     };
     this.LOAD_32 = {
         parameterSchema: [REGISTER_SHORTHAND,VALUE_32],
-        index: 16,
         name: "Load bytes",
         description: "Loads 4 bytes from value 2 and sends the address to the register shorthand found in value 1"
     };
 
     this.PRELOAD_8 = {
         parameterSchema: [REGISTER_SHORTHAND],
-        index: 17,
         name: "Preload bytes",
         description: "Reserves 1 byte and sends the address to the register shorthand found in value 1"
     };
     this.PRELOAD_16 = {
         parameterSchema: [REGISTER_SHORTHAND],
-        index: 18,
         name: "Preload bytes",
         description: "Reserves 2 bytes and sends the address to the register shorthand found in value 1"
     };
     this.PRELOAD_32 = {
         parameterSchema: [REGISTER_SHORTHAND],
-        index: 19,
         name: "Preload bytes",
         description: "Reserves 4 bytes and sends the address to the register shorthand found in value 1"
     };
@@ -151,52 +136,44 @@ const opcodes = new (function opcode_list() {
     /* Register control */
     this.COPY_REG = {
         parameterSchema: [REGISTER_SHORTHAND,REGISTER_SHORTHAND],
-        index: 20,
         name: "Copy register",
         description: "Copies the value of the register shorthand in value 1 to the register shorthand of value 2"
     };
     this.SWAP_REG = {
         parameterSchema: [REGISTER_SHORTHAND,REGISTER_SHORTHAND],
-        index: 21,
         name: "Swap register",
         description: "Swaps the values by the register shorthands found in value 1 and value 2"
     };
     this.SET_ADR_8 = {
         parameterSchema: [REGISTER_SHORTHAND,REGISTER_SHORTHAND],
-        index: 22,
         name: "Set address",
         description: "Sets the variable at address of the register shorthand of register 1 by value of the register shorthand of value 2, expecting 1 byte"
     };
     this.SET_ADR_16 = {
         parameterSchema: [REGISTER_SHORTHAND,REGISTER_SHORTHAND],
-        index: 23,
         name: "Set address",
         description: "Sets the variable at address of the register shorthand of register 1 by value of the register shorthand of value 2, expecting 2 bytes"
     };
     this.SET_ADR_32 = {
         parameterSchema: [REGISTER_SHORTHAND,REGISTER_SHORTHAND],
-        index: 24,
         name: "Set address",
         description: "Sets the variable at address of the register shorthand of register 1 by value of the register shorthand of value 2, expecting 4 bytes"
     };
 
     this.GET_ADR_8 = {
         parameterSchema: [REGISTER_SHORTHAND,REGISTER_SHORTHAND],
-        index: 25,
         name: "Get variable",
         description: "Gets 1 byte at the address of the register shorthand of value 1 and puts it in the register shorthand of value 2",
         secondaryDescription: "The first register shorthand is a register that contains and address"
     };
     this.GET_ADR_16 = {
         parameterSchema: [REGISTER_SHORTHAND,REGISTER_SHORTHAND],
-        index: 26,
         name: "Get variable",
         description: "Gets 2 bytes at the address of the register shorthand of value 1 and puts it in the register shorthand of value 2",
         secondaryDescription: "The first register shorthand is a register that contains and address"
     };
     this.GET_ADR_32 = {
         parameterSchema: [REGISTER_SHORTHAND,REGISTER_SHORTHAND],
-        index: 27,
         name: "Get variable",
         description: "Gets 4 bytes at the address of the register shorthand of value 1 and puts it in the register shorthand of value 2",
         secondaryDescription: "The first register shorthand is a register that contains and address"
@@ -204,86 +181,97 @@ const opcodes = new (function opcode_list() {
 
     this.SET_REG_8 = {
         parameterSchema: [REGISTER_SHORTHAND,VALUE_8],
-        index: 28,
         name: "Set register",
         description: "Direct to register value loading with 1 byte"
     };
     this.SET_REG_16 = {
         parameterSchema: [REGISTER_SHORTHAND,VALUE_16],
-        index: 29,
         name: "Set register",
         description: "Direct to register value loading with 2 bytes"
     };
     this.SET_REG_32 = {
         parameterSchema: [REGISTER_SHORTHAND,VALUE_32],
-        index: 30,
         name: "Set register",
         description: "Direct to register value loading with 4 bytes"
     };
-
     this.FREE_ADR_8 = {
         parameterSchema: [REGISTER_SHORTHAND],
-        index: 31,
         name: "Free memory",
         description: "Frees 1 byte of memory found at the address of register 1"
     };
     this.FREE_ADR_16 = {
         parameterSchema: [REGISTER_SHORTHAND],
-        index: 32,
         name: "Free memory",
         description: "Frees 2 bytes of memory found at the address of register 1"
     };
     this.FREE_ADR_32 = {
         parameterSchema: [REGISTER_SHORTHAND],
-        index: 33,
         name: "Free memory",
         description: "Frees 4 bytes of memory found at the address of register 1"
     };
+
     this.IN = {
-        index: 34,
         name: "Input",
         description: "Sends the first value of the input stream to register 1"
     };
     this.OUT = {
-        index: 35,
         name: "Output",
         description: "Sends the value of register 1 to the output stream"
     };
     this.NOP = {
-        index: 36,
         name: "Dummy",
         description: "Absolutely nothing. Sometimes helpful for program flow and control"
     };
 
     this.PRELOAD_BLOCK = {
         parameterSchema: [REGISTER_SHORTHAND],
-        index: 37,
         name: "Preload block",
         description: "Allocates a block of the size in bytes found in register 1, returning the address of the block to register 2"
     };
     this.FREE_BLOCK = {
         parameterSchema: [REGISTER_SHORTHAND,REGISTER_SHORTHAND],
-        index: 38,
         name: "Free block",
         description: "Frees a block of the size in bytes found in register 1, starting at the address found in register 2"
     };
     this.CALL = {
         parameterSchema: [REGISTER_SHORTHAND],
-        index: 39,
         name: "Call",
         description: "Enters a subroutine at the specified address of the register shorthand"
     };
     this.RET = {
-        index: 40,
         name: "Return",
         description: "Exits a subroutine and returns to its entry point"
     };
 
-    const operations = Object.entries(this);
+    Object.entries(this).forEach(entry=>{
+        entry[1].key = entry[0];
+    })
+
+    this.arithmetic = [this.ADD,this.SUB,this.MTP,this.DIV,this.MOD];
+    this.bitwise = [this.AND,this.OR,this.XOR,this.NOT,this.L_SHIFT,this.R_SHIFT,this.R_SHIFT_S];
+    this.memoryControl = [
+        this.LOAD_8,this.LOAD_16,this.LOAD_32,
+        this.PRELOAD_8,this.PRELOAD_16,this.PRELOAD_32,this.PRELOAD_BLOCK,
+        this.FREE_ADR_8,this.FREE_ADR_16,this.FREE_ADR_32,this.FREE_BLOCK
+    ];
+    this.registerControl = [
+        this.COPY_REG,this.SWAP_REG,
+        this.SET_ADR_8,this.SET_ADR_16,this.SET_ADR_32,
+        this.GET_ADR_8,this.GET_ADR_16,this.GET_ADR_32,
+        this.SET_REG_8,this.SET_REG_16,this.SET_REG_32,
+    ];
+    this.programControl = [this.CMP,this.JMP,this.CON_JMP,this.NOP,this.CALL,this.RET];
+    this.IO = [this.IN,this.OUT];
+
     this.allOperations = [];
-    operations.forEach(entry => {
-        const operation = entry[1];
-        operation.key = entry[0];
+    [...this.arithmetic,
+     ...this.bitwise,
+     ...this.memoryControl,
+     ...this.registerControl,
+     ...this.programControl,
+     ...this.IO
+    ].forEach((operation,idx) => {
+        operation.index = idx;
         if(this.allOperations[operation.index]) {
             throw Error("Operation index is used more than once");
         }
@@ -298,26 +286,6 @@ const opcodes = new (function opcode_list() {
         }
         this.allOperations[operation.index] = operation;
     });
-
-    /* Arithmetic the adjective, not the noun! /ˌeriTHˈmedik/ */
-    this.arithmetic = [this.ADD,this.SUB,this.MTP,this.DIV,this.MOD];
-    this.bitwise = [this.AND,this.OR,this.XOR,this.NOT,this.L_SHIFT,this.R_SHIFT,this.R_SHIFT_SIGN];
-    this.valueLoading = [
-        this.LOAD_8,this.LOAD_16,this.LOAD_32,
-        this.PRELOAD_8,this.PRELOAD_16,this.PRELOAD_32,
-        this.PRELOAD_BLOCK,this.FREE_BLOCK
-    ];
-    this.registerControl = [
-        this.COPY_REG,this.SWAP_REG,
-        this.SET_ADR_8,this.SET_ADR_16,this.SET_ADR_32,
-        this.GET_ADR_8,this.GET_ADR_16,this.GET_ADR_32,
-        this.SET_REG_8,this.SET_REG_16,this.SET_REG_32,
-    ];
-    this.memoryRelease = [
-        this.FREE_ADR_8,this.FREE_ADR_16,this.FREE_ADR_32,
-    ];
-    this.programControl = [this.CMP,this.JMP,this.CON_JMP,this.NOP,this.CALL,this.RET];
-    this.IO = [this.IN,this.OUT];
     this.registers = [
         {
             shortHand: "r1",

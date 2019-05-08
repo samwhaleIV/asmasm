@@ -3,7 +3,7 @@ import { opcodes, OVERFLOW_VALUES, REGISTER_SHORTHAND, VALUE_8, VALUE_16, VALUE_
 import create_bytecode from "./op-binary.js";
 import VirtualMemory from "./virtual-memory.js";
 import VirtualRegisters from "./virtual-registers.js";
-import { left_shift, right_shift, not, and, or, xor } from "./bindec.js";
+import { left_shift, right_shift, right_shift_sign, not, and, or, xor } from "./bindec.js";
 
 const INCOMPATIBLE_CROSS_REGISTER_SIZE =
 "Register A is smaller than register B. The size of register B must be less than or equal to that of register A";
@@ -142,36 +142,9 @@ const instructionProcessors = [
         validate_registers_1_2_size_matched(reg);
         reg[r1Value] = right_shift(reg[r1Value],reg[r2Value],reg[r1Size]);
     },
-    function compare(reg) {
-        if(reg[cmpSize] !== BYTE_1) {
-            throw Error(EXPECTED_8_BIT_REGISTER);
-        }
-        reg[cmpValue] = comparisons[reg[cmpValue]](
-            reg[r1Value],
-            reg[r2Value],
-            reg[r1Size]
-        ) ? 1 : 0;
-        reg[cmpSize] = BYTE_1;
-    },
-    function jump(reg) {
-        if(reg[jmpSize] !== BYTE_4) {
-            throw Error(INVALID_JUMP_REGISTER);
-        }
-        return {
-            type: JUMP_DIRECTIVE,
-            value: reg[jmpValue]
-        };
-    },
-    function conditional_jump(reg) {
-        if(reg[jmpSize] !== BYTE_4) {
-            throw Error(INVALID_JUMP_REGISTER);
-        }
-        if(reg[cmpValue] >= 1) {
-            return {
-                type: JUMP_DIRECTIVE,
-                value: reg[jmpValue]
-            };
-        }
+    function bitwise_right_shift_sign(reg) {
+        validate_registers_1_2_size_matched(reg);
+        reg[r1Value] = right_shift_sign(reg[r1value],reg[r2Value],reg[r1Size]);
     },
     function load_bytes_8(reg,mem,prm) {
         const address = preload_bytes_8(reg,mem,prm);
@@ -196,6 +169,35 @@ const instructionProcessors = [
     },
     function preload_bytes_32(reg,mem,prm) {
         preload_bytes_32(reg,mem,prm);
+    },
+    function preload_memory_block(reg,mem) {
+        const address = mem.allocate(reg[r1Value]);
+        reg[r2Value] = address;
+        reg[r2Size] = BYTE_4;
+    },
+    function free_memory_8(reg,mem,prm) {
+        if(reg[prm[0]+regSizeOffset] !== BYTE_4) {
+            throw Error(EXPECTED_32_BIT_REGISTER);
+        }
+        mem.free_8(reg[prm[0]]);
+    },
+    function free_memory_16(reg,mem,prm) {
+        if(reg[prm[0]+regSizeOffset] !== BYTE_4) {
+            throw Error(EXPECTED_32_BIT_REGISTER);
+        }
+        mem.free_16(reg[prm[0]]);
+    },
+    function free_memory_32(reg,mem,prm) {
+        if(reg[prm[0]+regSizeOffset] !== BYTE_4) {
+            throw Error(EXPECTED_32_BIT_REGISTER);
+        }
+        mem.free_32(reg[prm[0]]);
+    },
+    function free_memory_block(reg,mem) {
+        if(reg[r2Size] !== BYTE_4) {
+            throw Error(EXPECTED_32_BIT_REGISTER);
+        }
+        mem.free(reg[r2Value],reg[r1Value]);
     },
     function copy_register(reg,_,prm) {
         reg[prm[1]] = reg[prm[0]];
@@ -269,44 +271,43 @@ const instructionProcessors = [
         reg[prm[0]] = prm[1];
         reg[prm[0]+regSizeOffset] = BYTE_4;
     },
-    function free_memory_8(reg,mem,prm) {
-        if(reg[prm[0]+regSizeOffset] !== BYTE_4) {
-            throw Error(EXPECTED_32_BIT_REGISTER);
+
+
+
+
+    function compare(reg) {
+        if(reg[cmpSize] !== BYTE_1) {
+            throw Error(EXPECTED_8_BIT_REGISTER);
         }
-        mem.free_8(reg[prm[0]]);
+        reg[cmpValue] = comparisons[reg[cmpValue]](
+            reg[r1Value],
+            reg[r2Value],
+            reg[r1Size]
+        ) ? 1 : 0;
+        reg[cmpSize] = BYTE_1;
     },
-    function free_memory_16(reg,mem,prm) {
-        if(reg[prm[0]+regSizeOffset] !== BYTE_4) {
-            throw Error(EXPECTED_32_BIT_REGISTER);
+    function jump(reg) {
+        if(reg[jmpSize] !== BYTE_4) {
+            throw Error(INVALID_JUMP_REGISTER);
         }
-        mem.free_16(reg[prm[0]]);
+        return {
+            type: JUMP_DIRECTIVE,
+            value: reg[jmpValue]
+        };
     },
-    function free_memory_32(reg,mem,prm) {
-        if(reg[prm[0]+regSizeOffset] !== BYTE_4) {
-            throw Error(EXPECTED_32_BIT_REGISTER);
+    function conditional_jump(reg) {
+        if(reg[jmpSize] !== BYTE_4) {
+            throw Error(INVALID_JUMP_REGISTER);
         }
-        mem.free_32(reg[prm[0]]);
-    },
-    function input_stream(reg) {
-        reg[r1Value] = inputMethod();
-        reg[r1Size] = BYTE_1;
-    },
-    function output_stream(reg) {
-        outputMethod(reg[r1Value]);
+        if(reg[cmpValue] >= 1) {
+            return {
+                type: JUMP_DIRECTIVE,
+                value: reg[jmpValue]
+            };
+        }
     },
     function dummy(){
         return undefined;
-    },
-    function preload_memory_block(reg,mem) {
-        const address = mem.allocate(reg[r1Value]);
-        reg[r2Value] = address;
-        reg[r2Size] = BYTE_4;
-    },
-    function free_memory_block(reg,mem) {
-        if(reg[r2Size] !== BYTE_4) {
-            throw Error(EXPECTED_32_BIT_REGISTER);
-        }
-        mem.free(reg[r2Value],reg[r1Value]);
     },
     function subroutine_call(reg,_,prm) {
         if(reg[prm[0]+regSizeOffset] !== BYTE_4) {
@@ -321,6 +322,13 @@ const instructionProcessors = [
         return {
             type: RETURN_DIRECTIVE
         };
+    },
+    function input_stream(reg) {
+        reg[r1Value] = inputMethod();
+        reg[r1Size] = BYTE_1;
+    },
+    function output_stream(reg) {
+        outputMethod(reg[r1Value]);
     }
 ];
 function translateRegisterParameter(trueRegisterIndex) {
