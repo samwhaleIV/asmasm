@@ -62,8 +62,8 @@ function validate_registers_1_2_size_matched(reg) {
 const comparisons = [
     function equal(a,b){return a == b},
     function notEqual(a,b){return a != b},
-    function lessThan(a,b){return a > b},
-    function greaterThan(a,b){return a < b},
+    function lessThan(a,b){return a < b},
+    function greaterThan(a,b){return a > b},
     function greaterThanOrEqual(a,b){return a >= b},
     function lessThanOrEqual(a,b){return a <= b},
     function isZero(a){return a == 0},
@@ -74,13 +74,13 @@ const comparisons = [
 function preload_bytes_8(reg,mem,prm) {
     const address = mem.allocate_8(size);
     reg[prm[0]] = address;
-    reg[prm[0]+regSizeOffset] = BYTE_1;
+    reg[prm[0]+regSizeOffset] = BYTE_4;
     return address;
 }
 function preload_bytes_16(reg,mem,prm) {
     const address = mem.allocate_16(size);
     reg[prm[0]] = address;
-    reg[prm[0]+regSizeOffset] = BYTE_2;
+    reg[prm[0]+regSizeOffset] = BYTE_4;
     return address;
 }
 function preload_bytes_32(reg,mem,prm) {
@@ -271,10 +271,6 @@ const instructionProcessors = [
         reg[prm[0]] = prm[1];
         reg[prm[0]+regSizeOffset] = BYTE_4;
     },
-
-
-
-
     function compare(reg) {
         if(reg[cmpSize] !== BYTE_1) {
             throw Error(EXPECTED_8_BIT_REGISTER);
@@ -284,7 +280,6 @@ const instructionProcessors = [
             reg[r2Value],
             reg[r1Size]
         ) ? 1 : 0;
-        reg[cmpSize] = BYTE_1;
     },
     function jump(reg) {
         if(reg[jmpSize] !== BYTE_4) {

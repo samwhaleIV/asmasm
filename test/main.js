@@ -7,11 +7,16 @@ import interpreter from "../src/interpreter.js";
 interpreter.setInputMethod(getInput);
 interpreter.setOutputMethod(output);
 
+function save_bytecode(assemblyBytes) {
+    const blob = new Blob([assemblyBytes],{type:"octet/stream"});
+    saveAs(blob,"asmasm.out");
+}
+
 let operations;
 registerTest(
     "Operation generation test",
     async function() {
-        operations = [
+       operations = [
             op_gen.add(),
             op_gen.subtract(),
             op_gen.multiply(),
@@ -73,7 +78,7 @@ registerTest(
 registerTest(
     "Fibonacci test",
     async function() {
-        const operations = [
+        let operations = [
             op_gen.set_register("jmp",op_gen.jumpLink("start"),4),
             op_gen.jump(),
 
@@ -126,7 +131,9 @@ registerTest(
             op_gen.output()
         ];
         sendInput(32);
+        operations = create_bytecode(operations);
         console.log("Highest order operation format:",operations);
+        //save_bytecode(operations);
         return interpreter.executeAssembly(operations,{
             noMemoryManagement: true,
             registerDebug: false

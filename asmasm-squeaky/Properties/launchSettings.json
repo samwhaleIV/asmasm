@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "asmasm-squeaky": {
+      "commandName": "Project",
+      "commandLineArgs": "-in asmasm.out"
+    }
+  }
+}
