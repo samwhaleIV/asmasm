@@ -3,7 +3,7 @@ import { opcodes, OVERFLOW_VALUES, REGISTER_SHORTHAND, VALUE_8, VALUE_16, VALUE_
 import create_bytecode from "./op-binary.js";
 import VirtualMemory from "./virtual-memory.js";
 import VirtualRegisters from "./virtual-registers.js";
-import { left_shift, right_shift, right_shift_sign, not, and, or, xor } from "./bindec.js";
+import { left_shift, right_shift, not, and, or, xor } from "./bindec.js";
 
 const INCOMPATIBLE_CROSS_REGISTER_SIZE =
 "Register A is smaller than register B. The size of register B must be less than or equal to that of register A";
@@ -141,10 +141,6 @@ const instructionProcessors = [
     function bitwise_right_shift(reg) {
         validate_registers_1_2_size_matched(reg);
         reg[r1Value] = right_shift(reg[r1Value],reg[r2Value],reg[r1Size]);
-    },
-    function bitwise_right_shift_sign(reg) {
-        validate_registers_1_2_size_matched(reg);
-        reg[r1Value] = right_shift_sign(reg[r1value],reg[r2Value],reg[r1Size]);
     },
     function load_bytes_8(reg,mem,prm) {
         const address = preload_bytes_8(reg,mem,prm);

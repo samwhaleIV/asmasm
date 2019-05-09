@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
 
 namespace asmasm_squeaky {
 	internal sealed partial class Processor {
@@ -511,99 +510,96 @@ namespace asmasm_squeaky {
 						R_SHIFT();
 						break;
 					case 11:
-						R_SHIFT_S();
-						break;
-					case 12:
 						LOAD_8(instruction.parameters[0].value_8,instruction.parameters[1].value_8);
 						break;
-					case 13:
+					case 12:
 						LOAD_16(instruction.parameters[0].value_8,instruction.parameters[1].value_16);
 						break;
-					case 14:
+					case 13:
 						LOAD_32(instruction.parameters[0].value_8,instruction.parameters[1].value_32);
 						break;
-					case 15:
+					case 14:
 						PRELOAD_8(instruction.parameters[0].value_8);
 						break;
-					case 16:
+					case 15:
 						PRELOAD_16(instruction.parameters[0].value_8);
 						break;
-					case 17:
+					case 16:
 						PRELOAD_32(instruction.parameters[0].value_8);
 						break;
-					case 18:
+					case 17:
 						PRELOAD_BLOCK(instruction.parameters[0].value_8);
 						break;
-					case 19:
+					case 18:
 						FREE_ADR_8(instruction.parameters[0].value_8);
 						break;
-					case 20:
+					case 19:
 						FREE_ADR_16(instruction.parameters[0].value_8);
 						break;
-					case 21:
+					case 20:
 						FREE_ADR_32(instruction.parameters[0].value_8);
 						break;
-					case 22:
+					case 21:
 						FREE_BLOCK(instruction.parameters[0].value_8,instruction.parameters[1].value_8);
 						break;
-					case 23:
+					case 22:
 						COPY_REG(instruction.parameters[0].value_8,instruction.parameters[1].value_8);
 						break;
-					case 24:
+					case 23:
 						SWAP_REG(instruction.parameters[0].value_8,instruction.parameters[1].value_8);
 						break;
-					case 25:
+					case 24:
 						SET_ADR_8(instruction.parameters[0].value_8,instruction.parameters[1].value_8);
 						break;
-					case 26:
+					case 25:
 						SET_ADR_16(instruction.parameters[0].value_8,instruction.parameters[1].value_8);
 						break;
-					case 27:
+					case 26:
 						SET_ADR_32(instruction.parameters[0].value_8,instruction.parameters[1].value_8);
 						break;
-					case 28:
+					case 27:
 						GET_ADR_8(instruction.parameters[0].value_8,instruction.parameters[1].value_8);
 						break;
-					case 29:
+					case 28:
 						GET_ADR_16(instruction.parameters[0].value_8,instruction.parameters[1].value_8);
 						break;
-					case 30:
+					case 29:
 						GET_ADR_32(instruction.parameters[0].value_8,instruction.parameters[1].value_8);
 						break;
-					case 31:
+					case 30:
 						SET_REG_8(instruction.parameters[0].value_8,instruction.parameters[1].value_8);
 						break;
-					case 32:
+					case 31:
 						SET_REG_16(instruction.parameters[0].value_8,instruction.parameters[1].value_16);
 						break;
-					case 33:
+					case 32:
 						SET_REG_32(instruction.parameters[0].value_8,instruction.parameters[1].value_32);
 						break;
-					case 34:
+					case 33:
 						CMP();
 						break;
-					case 35:
+					case 34:
 						index = JMP();
 						break;
-					case 36:
+					case 35:
 						var conditionalJumpResult = CON_JMP();
 						if(conditionalJumpResult.HasValue) {
 							index = conditionalJumpResult.Value;
 						}
 						break;
-					case 38:
+					case 37:
 						stack.Push(new StackFrame(index,getRegisterValues()));
 						index = CALL(instruction.parameters[0].value_8);
 						break;
-					case 39:
+					case 38:
 						var stackFrame = stack.Pop();
 						index = stackFrame.address;
 						setRegisterValues(stackFrame.registerValues);
 						break;
-					case 40:
+					case 39:
 						IN();
 						break;
-					case 41:
+					case 40:
 						OUT();
 						break;
 					default:

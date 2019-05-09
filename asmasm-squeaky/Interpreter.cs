@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using Be.IO;
 
 namespace asmasm_squeaky {
 	public static class Interpreter {
 
 		private static ParameterType[][] parameterSchemas = new ParameterType[][] {
-			new ParameterType[] {},
 			new ParameterType[] {},
 			new ParameterType[] {},
 			new ParameterType[] {},

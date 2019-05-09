@@ -133,7 +133,7 @@ registerTest(
         sendInput(32);
         operations = create_bytecode(operations);
         console.log("Highest order operation format:",operations);
-        //save_bytecode(operations);
+        save_bytecode(operations);
         return interpreter.executeAssembly(operations,{
             noMemoryManagement: true,
             registerDebug: false

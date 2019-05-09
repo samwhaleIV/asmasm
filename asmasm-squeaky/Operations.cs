@@ -362,10 +362,6 @@ namespace asmasm_squeaky {
 		}
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		void R_SHIFT() {
-			throw new NotImplementedException("Still figuring this one out!");
-		}
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		void R_SHIFT_S() {
 			validate_registers_1_2_size_matched();
 			switch(r1_size) {
 				case ParameterType.size_8:

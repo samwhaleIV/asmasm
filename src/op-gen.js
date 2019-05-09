@@ -57,7 +57,6 @@ const op_gen = new (function(){
     this.bitwise_not = () =>                    basic(opcodes.NOT);
     this.bitwise_left_shift = () =>             basic(opcodes.L_SHIFT);
     this.bitwise_right_shift = () =>            basic(opcodes.R_SHIFT);
-    this.bitwise_right_shift_sign = () =>       basic(opcodes.R_SHIFT_S);
     this.compare = () =>                        basic(opcodes.CMP);
     this.jump = () =>                           basic(opcodes.JMP);
     this.conditional_jump = () =>               basic(opcodes.CON_JMP);

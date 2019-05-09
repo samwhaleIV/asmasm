@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace asmasm_squeaky {
+﻿namespace asmasm_squeaky {
 	public interface IVirtualMemory {
 
 		byte get_8(uint address);

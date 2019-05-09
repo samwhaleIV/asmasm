@@ -77,12 +77,7 @@ const opcodes = new (function opcode_list() {
     this.R_SHIFT = {
         name: "Zero fill right shift",
         description: BITWISE_IN_PLACE_DESCRIPTION,
-        secondaryDescription: "Shifts [a] in binary representation [b] to the right, shifting in [0]s from the left"
-    };
-    this.R_SHIFT_S = {
-        name: "Sign preserving right shift",
-        description: BITWISE_IN_PLACE_DESCRIPTION,
-        secondaryDescription: "Shifts [a] in binary representation [b] to the right, discarding bits shifted off"
+        secondaryDescription: "Shifts [a] in binary representation [b] to the right, propagating the left-most bit from the left"
     };
 
     /* Program control (flow) */
@@ -248,7 +243,7 @@ const opcodes = new (function opcode_list() {
     })
 
     this.arithmetic = [this.ADD,this.SUB,this.MTP,this.DIV,this.MOD];
-    this.bitwise = [this.AND,this.OR,this.XOR,this.NOT,this.L_SHIFT,this.R_SHIFT,this.R_SHIFT_S];
+    this.bitwise = [this.AND,this.OR,this.XOR,this.NOT,this.L_SHIFT,this.R_SHIFT];
     this.memoryControl = [
         this.LOAD_8,this.LOAD_16,this.LOAD_32,
         this.PRELOAD_8,this.PRELOAD_16,this.PRELOAD_32,this.PRELOAD_BLOCK,
